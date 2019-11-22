@@ -4,24 +4,29 @@ from MIP import update_params
 import retailer
 import warehouse
 
-length = 100
+length = 5
 
 warehouse = warehouse.Warehouse()
-r1 = retailer.Retailer("r1")
-r2 = retailer.Retailer("r2")
+r1 = retailer.Retailer("r1", length)
+r2 = retailer.Retailer("r2", length)
 
 warehouse.add_retailer(r1)
 warehouse.add_retailer(r2)
 
-warehouse.print_stocks()
+for i in range(length):
+    for r in warehouse.retailers:
+        r.update_inventory_morning(i)
+    warehouse.print_stocks(i)
 
-warehouse.send_stock(20, 0)
+    warehouse.send_stock(i+1, 0, i)
 
-warehouse.print_stocks()
+    for r in warehouse.retailers:
+        r.update_inventory_evening(i)
 
-# need to generate list of stochastic demands
+    warehouse.print_stocks(i)
+    print("")
+
 # loop over periods
-
 
 
 update_params(lead=[1, 1])
