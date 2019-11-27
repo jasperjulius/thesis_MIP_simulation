@@ -3,47 +3,62 @@ import retailer as rt
 import warehouse as wh
 
 
-def amounts_requested(warehouse, period):
-    a = []
-    for r in warehouse.retailers:
-        a.append(amount_requested(r, period))
-    return a
+class Simulation:
 
+    def __init__(self, length=100, stock=100):
+        self.length = length
+        self.warehouse = wh.Warehouse(stock=stock)
+        self.warehouse.add_retailer(rt.Retailer("r1", self.length))
+        self.warehouse.add_retailer(rt.Retailer("r2", self.length))
 
-def amount_requested(retailer, period):
-    R = retailer.R
-    Q = retailer.Q
-    ip = retailer.ip()
-    amount = 0
-    while R > ip:
-        amount += Q
-        ip += Q
-    return amount
+    def amount_requested(self, retailer):
+        R = retailer.R
+        Q = retailer.Q
+        ip = retailer.ip()
+        amount = 0
+        while R > ip:
+            amount += Q
+            ip += Q
+        return amount
 
+    def amounts_requested(self, warehouse):
+        a = []
+        for r in warehouse.retailers:
+            a.append(self.amount_requested(r))
+        return a
 
-length = 11
+    def run(self, FIFO=False):
 
-warehouse = wh.Warehouse(stock=205)
+        for i in range(self.length):
 
-warehouse.add_retailer(rt.Retailer("r1", length))
-warehouse.add_retailer(rt.Retailer("r2", length))
+            self.warehouse.update_morning(i)
+            amounts = self.amounts_requested(self.warehouse)
 
-for i in range(length):
+            if sum(amounts) > self.warehouse.stock:  # decision rule time
+                if FIFO:    # only works for two retailers!
+                    ips = []
 
-    warehouse.update_morning(i)
+                    for r in self.warehouse.retailers:
+                        ips.append(r.ip())
+                    if ips[0] <= ips[1]:
+                        amounts[1] = 0
+                    else:
+                        amounts[0] = 0
 
-    amounts = amounts_requested(warehouse, i)
+                    for i in range(len(amounts)):
+                        if amounts[i] > self.warehouse.stock:
+                            amounts[i] = 0
 
-    if sum(amounts) > warehouse.stock:  # decision rule time
-        set_params_warehouse(warehouse)
-        set_params_all_retailers(warehouse.retailers)
+                else:
+                    set_params_warehouse(self.warehouse)
+                    set_params_all_retailers(self.warehouse.retailers)
 
-        amounts = optimal_quantities()
-        print('SIMULATION! period:', i, 'stock_before:', warehouse.stock, 'quantities:', amounts)
+                    amounts = optimal_quantities()
+                    print('SIMULATION! period:', i, 'stock_before:', self.warehouse.stock, 'quantities:', amounts)
 
-    warehouse.send_stocks(amounts)
+            self.warehouse.send_stocks(amounts)
 
-    warehouse.print_stocks(i)
-    warehouse.update_evening()
-    warehouse.print_stocks(i)
-    print("")
+            self.warehouse.print_stocks(i)
+            self.warehouse.update_evening()
+            self.warehouse.print_stocks(i)
+            print("")
