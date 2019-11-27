@@ -1,41 +1,49 @@
-import simpy
-from MIP import optimal_quantities
-from MIP import update_params
-import retailer
-import warehouse
+from MIP import *
+import retailer as rt
+import warehouse as wh
 
-length = 5
 
-warehouse = warehouse.Warehouse()
-r1 = retailer.Retailer("r1", length)
-r2 = retailer.Retailer("r2", length)
+def amounts_requested(warehouse, period):
+    a = []
+    for r in warehouse.retailers:
+        a.append(amount_requested(r, period))
+    return a
 
-warehouse.add_retailer(r1)
-warehouse.add_retailer(r2)
+
+def amount_requested(retailer, period):
+    R = retailer.R
+    Q = retailer.Q
+    ip = retailer.ip()
+    amount = 0
+    while R > ip:
+        amount += Q
+        ip += Q
+    return amount
+
+
+length = 11
+
+warehouse = wh.Warehouse(stock=205)
+
+warehouse.add_retailer(rt.Retailer("r1", length))
+warehouse.add_retailer(rt.Retailer("r2", length))
 
 for i in range(length):
-    for r in warehouse.retailers:
-        r.update_inventory_morning(i)
+
+    warehouse.update_morning(i)
+
+    amounts = amounts_requested(warehouse, i)
+
+    if sum(amounts) > warehouse.stock:  # decision rule time
+        set_params_warehouse(warehouse)
+        set_params_all_retailers(warehouse.retailers)
+
+        amounts = optimal_quantities()
+        print('SIMULATION! period:', i, 'stock_before:', warehouse.stock, 'quantities:', amounts)
+
+    warehouse.send_stocks(amounts)
+
     warehouse.print_stocks(i)
-
-    warehouse.send_stock(i+1, 0, i)
-
-    for r in warehouse.retailers:
-        r.update_inventory_evening(i)
-
+    warehouse.update_evening()
     warehouse.print_stocks(i)
     print("")
-
-# loop over periods
-
-
-update_params(lead=[1, 1])
-
-print("FIRST SIM: ", optimal_quantities())
-
-update_params(c_holding=[5, 5])
-
-print("SECOND SIM: ", optimal_quantities())
-
-env = simpy.Environment()
-env.run(until=10)
