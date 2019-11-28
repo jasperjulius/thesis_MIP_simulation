@@ -17,10 +17,11 @@ class Retailer:
         self.Q = Q
         self.demands = []
         self.period = 0
-        for i in range(periods):
-            self.demands.append(
-                self.av_demand)  # todo: change to rand function later, doc demand? where does demand come from?
-        if demands is not None:
+        if demands is None:
+            for i in range(periods):
+                self.demands.append(
+                    self.av_demand)
+        else:
             self.demands = demands
 
     def update_morning(self, period):

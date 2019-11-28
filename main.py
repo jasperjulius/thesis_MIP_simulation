@@ -1,4 +1,4 @@
 import simulation
 
-sim = simulation.Simulation(length=5, stock=99)
-sim.run(FIFO=True)
+sim = simulation.Simulation(length=10, stock=101, stochastic=True)
+sim.run(FIFO=False)
