@@ -1,8 +1,15 @@
-class Warehouse:
+class Warehouse:    # todo: replenishment of warehouse!
 
     def __init__(self, stock=100):
+        self.doc_stock = stock
         self.stock = stock
         self.retailers = []
+        self.pending_deliveries = [0, 0, 0, 0, 0, 0]
+
+    def reset(self):
+        for r in self.retailers:
+            r.reset()
+        self.stock = self.doc_stock
         self.pending_deliveries = [0, 0, 0, 0, 0, 0]
 
     # method for adding retailers

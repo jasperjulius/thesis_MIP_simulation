@@ -8,7 +8,7 @@ class Retailer:
         self.av_demand = av_demand
         self.c_holding = c_holding
         self.c_shortage = c_shortage
-        self.doc_inv = [current_inv]  # ever periods inventory after arrivals, before demand
+        self.doc_inv = []  # every period's inventory after arrivals, before demand
         self.current_inv = current_inv
         self.c_fixed_order = c_fixed_order
         self.pending_arrivals = self.construct_pending()
@@ -24,13 +24,19 @@ class Retailer:
         else:
             self.demands = demands
 
+    def reset(self):
+        self.current_inv = self.doc_inv[0]
+        self.doc_inv = []
+
+        self.pending_arrivals = self.construct_pending()
+        self.doc_arrivals = self.construct_pending()
+
     def update_morning(self, period):
         self.period = period
-        if self.period == 0:
-            return
 
         self.doc_inv.append(self.current_inv + self.pending_arrivals[0])
         self.current_inv += self.pending_arrivals[0]
+        self.doc_arrivals[period] = self.pending_arrivals[0]
         self.pending_arrivals[0] = 0
         self.doc_arrivals.append(0)
 
@@ -57,3 +63,4 @@ class Retailer:
         for i in range(self.lead):
             pending.append(0)
         return pending
+
