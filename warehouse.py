@@ -2,7 +2,7 @@ class Warehouse:  # todo: josef: with which rule is warehouse replenished?
     # todo: josef: costs of warehouse auch includen in toal costs?
     # todo: josef: wie wähle ich die parameter (holding, shortage usw.)
 
-    def __init__(self, stock=100, R=40, Q=40, lead=2):
+    def __init__(self, stock=100, R=20, Q=40, lead=2):
         self.doc_stock = stock
         self.stock = stock
         self.R = R

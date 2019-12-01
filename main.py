@@ -5,14 +5,14 @@ sims = []
 
 total_fifo = 0
 total_mip = 0
-reps = 20
+reps = 10
 start_time = time.time()
 exec_times = []
 last_time = 0
 for period in range(reps):
 
     print(period / reps)
-    sim = simulation.Simulation(length=300, stock=100, stochastic=True)
+    sim = simulation.Simulation(length=500, stock=100, stochastic=True)
     sim.run(FIFO=False)
     after1 = time.time()
     results_mip = sim.collect_statistics()
@@ -51,7 +51,9 @@ for period in range(reps):
     sims.append((total_mip, total_fifo))
 
 diffs = []
+diffs_percent = []
 for i, j in sims:
-    diffs.append(i - j)
-
+    diffs.append(round(i - j, 2))
+    diffs_percent.append(round(i/j, 2))
 print(diffs)
+print(diffs_percent)
