@@ -42,7 +42,7 @@ class Retailer:
     def update_evening(self):
 
         self.pending_arrivals.append(0)
-        self.pending_arrivals = self.pending_arrivals[1:]
+        del self.pending_arrivals[:1]
         self.current_inv -= self.demands[self.period]
 
     def determine_order_quantity(self):  # currently done in simulation: amount_requested

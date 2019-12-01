@@ -13,7 +13,7 @@ class Simulation:
         for i in range(num_retailers):
             if stochastic:
                 random = rand.binomial(20, 0.5, self.length)  # todo: josef: what kind of distribution? what package?
-                print("retailer:", i, "rng: ", random)
+
             else:
                 random = None
             r = rt.Retailer("retailer " + str(i), self.length, demands=random)

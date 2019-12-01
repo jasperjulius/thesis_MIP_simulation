@@ -1,4 +1,3 @@
-import simpy
 from gurobipy import *
 
 
@@ -64,8 +63,7 @@ def shortage_objective(X_shortage, i):
 
 
 # MODEL
-model = Model()
-model.setParam('OutputFlag', False)
+model = None
 
 p_stock_warehouse = None
 
@@ -153,6 +151,10 @@ def update_params(stock_warehouse=None, lead=None, av_demand=None, c_holding=Non
 
 
 def optimal_quantities():
+    global model
+    model = Model()
+    model.setParam('OutputFlag', False)
+
     num_i = len(p_lead)
     X_holding = model.addVars(num_i, vtype=GRB.INTEGER, name='# sent out')
     X_shortage = model.addVars(num_i, vtype=GRB.INTEGER, name='# sent out (helper var) ')

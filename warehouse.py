@@ -60,4 +60,5 @@ class Warehouse:  # todo: josef: with which rule is warehouse replenished?
         self.stock += self.pending_arrivals[0]
         self.pending_arrivals[0] = 0
         self.pending_arrivals.append(0)
-        self.pending_arrivals = self.pending_arrivals[1:]
+        del self.pending_arrivals[:1]
+        pass
