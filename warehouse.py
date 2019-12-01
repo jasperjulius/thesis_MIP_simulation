@@ -1,16 +1,21 @@
-class Warehouse:    # todo: replenishment of warehouse!
+class Warehouse:  # todo: josef: with which rule is warehouse replenished?
+    # todo: josef: costs of warehouse auch includen in toal costs?
+    # todo: josef: wie wähle ich die parameter (holding, shortage usw.)
 
-    def __init__(self, stock=100):
+    def __init__(self, stock=100, R=40, Q=40, lead=2):
         self.doc_stock = stock
         self.stock = stock
+        self.R = R
+        self.Q = Q
+        self.lead = lead
         self.retailers = []
-        self.pending_deliveries = [0, 0, 0, 0, 0, 0]
+        self.pending_arrivals = [0, 0, 0, 0, 0, 0]
 
     def reset(self):
         for r in self.retailers:
             r.reset()
         self.stock = self.doc_stock
-        self.pending_deliveries = [0, 0, 0, 0, 0, 0]
+        self.pending_arrivals = [0, 0, 0, 0, 0, 0]
 
     # method for adding retailers
     def add_retailer(self, retailer):
@@ -41,3 +46,18 @@ class Warehouse:    # todo: replenishment of warehouse!
     def update_evening(self):
         for r in self.retailers:
             r.update_evening()
+
+    def ip(self):
+        ip = self.stock
+        for amount in self.pending_arrivals:
+            ip += amount
+        return ip
+
+    def add_stock(self, amount):
+        self.pending_arrivals[self.lead] = amount
+
+    def update_self(self):
+        self.stock += self.pending_arrivals[0]
+        self.pending_arrivals[0] = 0
+        self.pending_arrivals.append(0)
+        self.pending_arrivals = self.pending_arrivals[1:]

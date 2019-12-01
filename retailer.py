@@ -1,15 +1,14 @@
 class Retailer:
 
-    def __init__(self, name, periods, lead=2, av_demand=10, c_holding=0.2,
-                 c_shortage=50, current_inv=30,
+    def __init__(self, name, periods, lead=2, av_demand=10, c_holding=0.2, c_shortage=5, current_inv=30,
                  c_fixed_order=0.1, R=40, Q=20, demands=None):
         self.name = name
         self.lead = lead
+        self.current_inv = current_inv
         self.av_demand = av_demand
         self.c_holding = c_holding
         self.c_shortage = c_shortage
         self.doc_inv = []  # every period's inventory after arrivals, before demand
-        self.current_inv = current_inv
         self.c_fixed_order = c_fixed_order
         self.pending_arrivals = self.construct_pending()
         self.doc_arrivals = self.construct_pending()
@@ -52,15 +51,14 @@ class Retailer:
     def add_stock(self, amount):
         self.pending_arrivals[self.lead] = amount
 
-    def ip(self):
-        ip = self.current_inv
-        for amount in self.pending_arrivals:
-            ip += amount
-        return ip
-
     def construct_pending(self):
         pending = [0]
         for i in range(self.lead):
             pending.append(0)
         return pending
 
+    def ip(self):
+        ip = self.current_inv
+        for amount in self.pending_arrivals:
+            ip += amount
+        return ip

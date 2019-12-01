@@ -56,6 +56,8 @@ class Simulation:
     def run(self, FIFO=False):
         for i in range(self.length):
             self.warehouse.update_morning(i)
+            self.warehouse.update_self()
+
             amounts = self.amounts_requested(self.warehouse)
 
             if sum(amounts) > self.warehouse.stock:  # decision rule time
@@ -69,10 +71,11 @@ class Simulation:
 
             self.warehouse.send_stocks(amounts)
 
+            self.warehouse.add_stock(self.amount_requested(self.warehouse))
+
             # self.warehouse.print_stocks(i)
             self.warehouse.update_evening()
             # self.warehouse.print_stocks(i)
-            print("")
 
     def fifo(self, amounts):  # todo: change to multiretailer implementation
         ips = []
