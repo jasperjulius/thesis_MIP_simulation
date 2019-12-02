@@ -1,12 +1,14 @@
-from MIP import *
+import MIP as mip
 import retailer as rt
 import warehouse as wh
 import numpy.random as rand
-
+import time
 
 class Simulation:
 
+
     def __init__(self, num_retailers=2, length=100, stock=100, stochastic=True):
+        self.times = []
         self.length = length
         self.warehouse = wh.Warehouse(stock=stock)
         self.stats = None
@@ -64,9 +66,14 @@ class Simulation:
                 if FIFO:
                     self.fifo(amounts)  # currently only works for two retailers!
                 else:
-                    set_params_warehouse(self.warehouse)
-                    set_params_all_retailers(self.warehouse.retailers)
-                    amounts = optimal_quantities()
+                    model = mip.MIP()
+                    model.set_params_warehouse(self.warehouse)
+                    model.set_params_all_retailers(self.warehouse.retailers)
+
+                    time_before = time.time()
+                    amounts = model.optimal_quantities()
+                    self.times.append(time.time()-time_before)
+
                     # print('SIMULATION! period:', i, 'stock_before:', self.warehouse.stock, 'quantities:', amounts)
 
             self.warehouse.send_stocks(amounts)

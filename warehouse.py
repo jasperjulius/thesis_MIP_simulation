@@ -23,7 +23,7 @@ class Warehouse:  # todo: josef: with which rule is warehouse replenished?
 
     # method for sending to retailers
     def send_stock(self, amount, number_retailer):
-        if self.stock < amount:
+        if self.stock < amount and amount >0:
             print("WARNING: trying to send more than Warehouse has - aborting")
             return -1
         r = self.retailers[number_retailer]

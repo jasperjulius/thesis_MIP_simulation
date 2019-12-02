@@ -1,177 +1,213 @@
 from gurobipy import *
 
 
-# TODO: aktuell wird mit dem tagesmittelwert gerechnet. dies ist eine akkurate angabe bei positivem inventory an morgen und abend, aber nicht bei wechsel von pos auf neg. (iv/2*iv/d)
-def holding_piecewise_objectives(X_holding, i):  # average inventory of retailer i in period t - only for t >= leadtime
-    count = 0
-    graph = []
-    x = 0
+class MIP:
 
-    for t in range(p_lead[i], p_lead[i] * 2 + 1):  # how many periods into future?
+    def __init__(self):
+        self.model = Model()
+        self.model.setParam('OutputFlag', False)
 
-        x = p_current_inv[i] + sum(p_pending_arrivals[i][:t + 1]) - p_av_demand[i] * (t + 0.5)
+    def average(self, stock, demand):
+        if stock >= demand:
+            return stock - 0.5 * demand
+        elif stock > 0:
+            return float(stock) / 2 * float(stock) / demand
+        elif stock <= 0:
+            return 0
 
-        if count == 0:
-            # add initial point on x axis (-M, 0)
-            graph.append((-x - 1, 0))
+    def holding_objective_old(self, X_holding,
+                              i):  # average inventory of retailer i in period t - only for t >= leadtime
+        count = 0
+        graph = []
+        x = 0
 
-        # generate next point from current
-        graph.append((-x, graph[-1][1] + count * (-x - graph[-1][0])))
-        count += 1
+        for t in range(p_lead[i], p_lead[i] * 2 + 1):  # how many periods into future?
 
-    # add final point with  (last_point_x + 1, last_point_y + count)
-    graph.append((-x + 1, graph[-1][1] + count))
+            x = p_current_inv[i] + sum(p_pending_arrivals[i][:t + 1]) - p_av_demand[i] * (t + 0.5)
 
-    # transform tuples into two lists
-    list_x, list_y = map(list, zip(*graph))
+            if count == 0:
+                # add initial point on x axis (-M, 0)
+                graph.append((-x - 1, 0))
 
-    # scale graph according to holding costs of i
-    list_y = [j * p_c_holding[i] for j in list_y]
+            # generate next point from current
+            graph.append((-x, graph[-1][1] + count * (-x - graph[-1][0])))
+            count += 1
 
-    # add curve as one connected, but not continuous obj function for variable X[i]
-    model.setPWLObj(X_holding[i], list_x, list_y)
-    return
+        # add final point with  (last_point_x + 1, last_point_y + count)
+        graph.append((-x + 1, graph[-1][1] + count))
 
+        # transform tuples into two lists
+        list_x, list_y = map(list, zip(*graph))
 
-def shortage_objective(X_shortage, i):
-    ip = []
-    missed_deliveries = []
-    total_loss = 0
-    sum_missed_deliveries = 0
+        # scale graph according to holding costs of i
+        list_y = [j * p_c_holding[i] for j in list_y]
 
-    for t in range(p_lead[i], p_lead[i] * 2 + 2):
-        ip.append(p_current_inv[i] + sum(p_pending_arrivals[i][:t + 1]) - p_av_demand[i] * t)
+        # add curve as one connected, but not continuous obj function for variable X[i]
+        self.model.setPWLObj(X_holding[i], list_x, list_y)
+        return
 
-    for j in range(1, len(ip)):
-        loss = 0
+    def holding_objective(self, X_holding, i):  # average inventory of retailer i in period t - only for t >= leadtime
 
-        if ip[j - 1] >= 0 and ip[j] >= 0:
+        graph = []
+        stocks = []
+        global p_stock_warehouse
+        for t in range(p_lead[i], p_lead[i] * 2 + 1):  # how many periods into future?
+
+            stocks.append(p_current_inv[i] + sum(p_pending_arrivals[i][:t + 1]) - p_av_demand[i] * t)
+
+        upper_bound = -1 * (stocks[-1] - p_av_demand[i]) + 1
+        if upper_bound <= 0:
+            upper_bound = 1
+        if upper_bound > p_stock_warehouse > 0:
+            upper_bound = p_stock_warehouse
+        for x in range(upper_bound + 1):  # change to better upper bound
+            av_stock = 0
+            for stock in stocks:  # calculate average stock of each period
+                av_stock += self.average(stock + x, p_av_demand[i])
+            graph.append((x, av_stock))
+
+        # transform tuples into two lists
+        list_x, list_y = map(list, zip(*graph))
+
+        # scale graph according to holding costs of i
+        list_y = [j * p_c_holding[i] for j in list_y]
+
+        # add curve as one connected, but not continuous obj function for variable X[i]
+        self.model.setPWLObj(X_holding[i], list_x, list_y)
+        return
+
+    def shortage_objective(self, X_shortage, i):
+        ip = []
+        missed_deliveries = []
+        total_loss = 0
+        sum_missed_deliveries = 0
+
+        for t in range(p_lead[i], p_lead[i] * 2 + 2):
+            ip.append(p_current_inv[i] + sum(p_pending_arrivals[i][:t + 1]) - p_av_demand[i] * t)
+
+        for j in range(1, len(ip)):
             loss = 0
-        if ip[j - 1] >= 0 > ip[j]:
-            loss = -ip[j]
-        if ip[j - 1] < 0 and ip[j] < 0:
-            loss = ip[j - 1] - ip[j]
 
-        missed_deliveries.append(loss)
-        sum_missed_deliveries = sum(missed_deliveries)
-        total_loss = sum_missed_deliveries * p_c_shortage[i]
+            if ip[j - 1] >= 0 and ip[j] >= 0:
+                loss = 0
+            if ip[j - 1] >= 0 > ip[j]:
+                loss = -ip[j]
+            if ip[j - 1] < 0 and ip[j] < 0:
+                loss = ip[j - 1] - ip[j]
 
-    graph = [(0, total_loss), (sum_missed_deliveries, 0), (sum_missed_deliveries + 1, 0)]
-    list_x, list_y = map(list, zip(*graph))
+            missed_deliveries.append(loss)
+            sum_missed_deliveries = sum(missed_deliveries)
+            total_loss = sum_missed_deliveries * p_c_shortage[i]
 
-    model.setPWLObj(X_shortage[i], list_x, list_y)
+        graph = [(0, total_loss), (sum_missed_deliveries, 0), (sum_missed_deliveries + 1, 0)]
+        list_x, list_y = map(list, zip(*graph))
 
+        self.model.setPWLObj(X_shortage[i], list_x, list_y)
 
-# MODEL
-model = None
-
-p_stock_warehouse = None
-
-p_lead = []
-p_av_demand = []
-p_c_holding = []
-p_c_shortage = []
-p_current_inv = []
-p_c_fixed_order = []
-
-# erster wert jeweils für t = 0, also "jetzt"; aktuell wird so gerechnet, als kämen deliveries first thing in the morning an, und sind somit im täglichen inventory zur berechnung der holding/shortage costs mit drin
-p_pending_arrivals = []
-
-
-def set_params_warehouse(warehouse):
-    global p_stock_warehouse
-    p_stock_warehouse = warehouse.stock
-
-
-def set_params_all_retailers(retailers):
-    global p_lead
-    global p_av_demand
-    global p_c_holding
-    global p_c_shortage
-    global p_current_inv
-    global p_c_fixed_order
-    global p_pending_arrivals
-
+    # MODEL
+    p_stock_warehouse = None
     p_lead = []
     p_av_demand = []
     p_c_holding = []
     p_c_shortage = []
     p_current_inv = []
     p_c_fixed_order = []
+
+    # erster wert jeweils für t = 0, also "jetzt"; aktuell wird so gerechnet, als kämen deliveries first thing in the morning an, und sind somit im täglichen inventory zur berechnung der holding/shortage costs mit drin
     p_pending_arrivals = []
 
-    for r in retailers:
-        set_params_retailer(r)
+    def set_params_warehouse(self, warehouse):
+        global p_stock_warehouse
+        if warehouse.stock > 0:
+            p_stock_warehouse = warehouse.stock
+        else:
+            p_stock_warehouse = 0
 
+    def set_params_all_retailers(self, retailers):
+        global p_lead
+        global p_av_demand
+        global p_c_holding
+        global p_c_shortage
+        global p_current_inv
+        global p_c_fixed_order
+        global p_pending_arrivals
 
-def set_params_retailer(retailer):
-    p_lead.append(retailer.lead)
-    p_av_demand.append(retailer.av_demand)
-    p_c_holding.append(retailer.c_holding)
-    p_c_shortage.append(retailer.c_shortage)
-    p_current_inv.append(retailer.current_inv)
-    p_c_fixed_order.append(retailer.c_fixed_order)
-    p_pending_arrivals.append(retailer.pending_arrivals)
+        p_lead = []
+        p_av_demand = []
+        p_c_holding = []
+        p_c_shortage = []
+        p_current_inv = []
+        p_c_fixed_order = []
+        p_pending_arrivals = []
 
+        for r in retailers:
+            self.set_params_retailer(r)
 
-def update_params(stock_warehouse=None, lead=None, av_demand=None, c_holding=None, c_shortage=None, current_inv=None,
-                  c_fixed_order=None, outstanding_deliveries=None):
-    global p_stock_warehouse
-    global p_lead
-    global p_av_demand
-    global p_c_holding
-    global p_c_shortage
-    global p_current_inv
-    global p_c_fixed_order
-    global p_pending_arrivals
+    def set_params_retailer(self, retailer):
+        p_lead.append(retailer.lead)
+        p_av_demand.append(retailer.av_demand)
+        p_c_holding.append(retailer.c_holding)
+        p_c_shortage.append(retailer.c_shortage)
+        p_current_inv.append(retailer.current_inv)
+        p_c_fixed_order.append(retailer.c_fixed_order)
+        p_pending_arrivals.append(retailer.pending_arrivals)
 
-    if stock_warehouse is not None:
-        p_stock_warehouse = stock_warehouse
+    def update_params(self, stock_warehouse=None, lead=None, av_demand=None, c_holding=None, c_shortage=None,
+                      current_inv=None,
+                      c_fixed_order=None, outstanding_deliveries=None):
+        global p_stock_warehouse
+        global p_lead
+        global p_av_demand
+        global p_c_holding
+        global p_c_shortage
+        global p_current_inv
+        global p_c_fixed_order
+        global p_pending_arrivals
 
-    if lead is not None:
-        p_lead = lead
+        if stock_warehouse is not None:
+            p_stock_warehouse = stock_warehouse
 
-    if av_demand is not None:
-        p_av_demand = av_demand
+        if lead is not None:
+            p_lead = lead
 
-    if c_holding is not None:
-        p_c_holding = c_holding
+        if av_demand is not None:
+            p_av_demand = av_demand
 
-    if c_shortage is not None:
-        p_c_shortage = c_shortage
+        if c_holding is not None:
+            p_c_holding = c_holding
 
-    if current_inv is not None:
-        p_current_inv = current_inv
+        if c_shortage is not None:
+            p_c_shortage = c_shortage
 
-    if c_fixed_order is not None:
-        p_c_fixed_order = c_fixed_order
+        if current_inv is not None:
+            p_current_inv = current_inv
 
-    if outstanding_deliveries is not None:
-        p_pending_arrivals = outstanding_deliveries
+        if c_fixed_order is not None:
+            p_c_fixed_order = c_fixed_order
 
+        if outstanding_deliveries is not None:
+            p_pending_arrivals = outstanding_deliveries
 
-def optimal_quantities():
-    global model
-    model = Model()
-    model.setParam('OutputFlag', False)
+    def optimal_quantities(self):
 
-    num_i = len(p_lead)
-    X_holding = model.addVars(num_i, vtype=GRB.INTEGER, name='# sent out')
-    X_shortage = model.addVars(num_i, vtype=GRB.INTEGER, name='# sent out (helper var) ')
-    X_fixed = model.addVars(num_i, vtype=GRB.BINARY, name='delivering to i')
+        num_i = len(p_lead)
+        X_holding = self.model.addVars(num_i, vtype=GRB.INTEGER, name='# sent out - holding')
+        X_shortage = self.model.addVars(num_i, vtype=GRB.INTEGER, name='# sent out - shortage (helper var) ')
+        X_fixed = self.model.addVars(num_i, vtype=GRB.BINARY, name='binary delivering to i')
 
-    for i in range(num_i):
-        holding_piecewise_objectives(X_holding, i)
-        shortage_objective(X_shortage, i)
-        X_fixed[i].Obj = p_c_fixed_order[i]
+        for i in range(num_i):
+            self.holding_objective(X_holding, i)
+            self.shortage_objective(X_shortage, i)
+            X_fixed[i].Obj = p_c_fixed_order[i]
 
-    model.addConstr(quicksum(X_holding[i] for i in X_holding) <= p_stock_warehouse)  # ct max capacity at warehouse
-    model.addConstrs(X_holding[i] == X_shortage[i] for i in X_holding)  # ct(i) hilfsvariable constraint
-    model.addConstrs(X_holding[i] <= X_fixed[i] * p_stock_warehouse for i in X_holding)  # ct fixed order costs
+        self.model.addConstr(
+            quicksum(X_holding[i] for i in X_holding) <= p_stock_warehouse)  # ct max capacity at warehouse
+        self.model.addConstrs(X_holding[i] == X_shortage[i] for i in X_holding)  # ct(i) hilfsvariable constraint
+        self.model.addConstrs(X_holding[i] <= X_fixed[i] * p_stock_warehouse for i in X_holding)  # ct fixed order costs
+        self.model.optimize()
 
-    model.optimize()
-    # model.printAttr('x')
-    final = []
-    for i in range(num_i):
-        final.append(int(X_holding.get(i).X))
-    return final
+        # model.printAttr('x')
+        final = []
+        for i in range(num_i):
+            final.append(int(X_holding.get(i).X))
+        return final
