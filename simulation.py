@@ -4,17 +4,19 @@ import warehouse as wh
 import numpy.random as rand
 import time
 
-class Simulation:
 
+class Simulation:
 
     def __init__(self, num_retailers=2, length=100, stock=100, stochastic=True):
         self.times = []
         self.length = length
         self.warehouse = wh.Warehouse(stock=stock)
         self.stats = None
+        self.num_retailers = num_retailers
         for i in range(num_retailers):
             if stochastic:
-                random = rand.binomial(20, 0.5, self.length)  # todo: josef: what kind of distribution? what package?
+                random = rand.binomial(20, 0.5,
+                                       self.length)  # todo: josef: what kind of distribution? what package? poisson/ neg binomial
 
             else:
                 random = None
@@ -57,6 +59,7 @@ class Simulation:
 
     def run(self, FIFO=False):
         for i in range(self.length):
+            # self.warehouse.print_stocks(i)
             self.warehouse.update_morning(i)
             self.warehouse.update_self()
 
@@ -66,13 +69,16 @@ class Simulation:
                 if FIFO:
                     self.fifo(amounts)  # currently only works for two retailers!
                 else:
-                    model = mip.MIP()
-                    model.set_params_warehouse(self.warehouse)
-                    model.set_params_all_retailers(self.warehouse.retailers)
-
                     time_before = time.time()
-                    amounts = model.optimal_quantities()
-                    self.times.append(time.time()-time_before)
+
+                    if self.warehouse.stock is not 0:
+                        model = mip.MIP(self.times)
+                        model.set_params_warehouse(self.warehouse)
+                        model.set_params_all_retailers(self.warehouse.retailers)
+                        amounts = model.optimal_quantities()
+                    else:
+                        amounts = [0 for i in range(self.num_retailers)]
+                    self.times.append((time.time() - time_before,))
 
                     # print('SIMULATION! period:', i, 'stock_before:', self.warehouse.stock, 'quantities:', amounts)
 

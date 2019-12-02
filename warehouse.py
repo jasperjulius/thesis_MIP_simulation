@@ -1,12 +1,18 @@
-class Warehouse:  # todo: josef: with which rule is warehouse replenished?
-    # todo: josef: costs of warehouse auch includen in toal costs?
-    # todo: josef: wie wähle ich die parameter (holding, shortage usw.)
+from math import ceil
 
-    def __init__(self, stock=100, R=20, Q=40, lead=2):
+
+class Warehouse:  # todo: josef: with which rule is warehouse replenished? -> same as retailers!
+    # todo: josef: costs of warehouse auch includen in total costs? gute frage
+    # todo: josef: wie wähle ich die parameter (holding, shortage usw.) -> thomas arbeit
+
+    def __init__(self, stock=100, R=60, lead=2, c_holding=0.2, c_fixed_order=2.0):
+        self.av_demand = 0
+        self.c_fixed_order = c_fixed_order
+        self.c_holding = c_holding
         self.doc_stock = stock
         self.stock = stock
         self.R = R
-        self.Q = Q
+        self.Q = 0
         self.lead = lead
         self.retailers = []
         self.pending_arrivals = [0, 0, 0, 0, 0, 0]
@@ -20,10 +26,16 @@ class Warehouse:  # todo: josef: with which rule is warehouse replenished?
     # method for adding retailers
     def add_retailer(self, retailer):
         self.retailers.append(retailer)
+        demand = 0
+        for r in self.retailers:
+            demand += r.av_demand
+        self.av_demand = demand
+        self.Q = ceil((2 * demand * self.c_fixed_order / self.c_holding) ** 0.5)
+        pass
 
     # method for sending to retailers
     def send_stock(self, amount, number_retailer):
-        if self.stock < amount and amount >0:
+        if self.stock < amount and amount > 0:
             print("WARNING: trying to send more than Warehouse has - aborting")
             return -1
         r = self.retailers[number_retailer]

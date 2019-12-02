@@ -1,7 +1,11 @@
+from math import ceil
+
 class Retailer:
 
+    # todo: params von thomas
+
     def __init__(self, name, periods, lead=2, av_demand=10, c_holding=0.2, c_shortage=5, current_inv=30,
-                 c_fixed_order=0.1, R=40, Q=20, demands=None):
+                 c_fixed_order=2.0, R=40, demands=None):
         self.name = name
         self.lead = lead
         self.current_inv = current_inv
@@ -13,7 +17,7 @@ class Retailer:
         self.pending_arrivals = self.construct_pending()
         self.doc_arrivals = self.construct_pending()
         self.R = R
-        self.Q = Q
+        self.Q = ceil((2*av_demand*c_fixed_order/c_holding)**0.5)
         self.demands = []
         self.period = 0
         if demands is None:
