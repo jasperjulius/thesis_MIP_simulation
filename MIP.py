@@ -13,8 +13,8 @@ class MIP:
         self.p_av_demand = []
         self.p_c_holding = []
         self.p_c_shortage = []
-        self.p_current_inv = []
         self.p_c_fixed_order = []
+        self.p_current_inv = []
 
     def average(self, stock, demand):
         if stock >= demand:

@@ -36,10 +36,16 @@ class Simulation:
         total_f = []
 
         # kosten warehouse
-        w = self.warehouse
-        wh_stocks = None  # doesnt exist - not doc_stocks
-        wh_pending = None  # doesnt exist
 
+        w = self.warehouse
+        total_h.append(sum(w.doc_inv) * w.c_holding)
+        total_s.append(0)
+        count = 0
+        for i in w.doc_arrivals:
+            if i > 0:
+                count += 1
+
+        total_f.append(count * w.c_fixed_order)
 
         for r in self.warehouse.retailers:
             rt_invs.append(r.doc_inv)
@@ -67,8 +73,6 @@ class Simulation:
             total_h.append(cost_h * rt_param_h[i])
             total_s.append(cost_s * rt_param_s[i])
             total_f.append(cost_f)
-
-
 
         self.stats = [total_h, total_s, total_f]
         return [total_h, total_s, total_f]
@@ -104,7 +108,7 @@ class Simulation:
                     # print('SIMULATION! period:', i, 'stock_before:', self.warehouse.stock, 'quantities:', amounts)
 
             self.warehouse.send_stocks(amounts)
-
+            self.warehouse.update_doc_inv()
             self.warehouse.add_stock(self.amount_requested(self.warehouse))
 
             # self.warehouse.print_stocks(i)

@@ -3,11 +3,13 @@ from math import ceil
 
 class Warehouse:
 
-    def __init__(self, stock=100, R=60, lead=2, c_holding=0.2, c_fixed_order=2.0):
+    def __init__(self, stock=100, R=60, lead=2, c_holding=0.1, c_fixed_order=1.5):
         self.av_demand = 0
         self.c_fixed_order = c_fixed_order
         self.c_holding = c_holding
         self.doc_stock = stock
+        self.doc_inv = []
+        self.doc_arrivals = [0, 0, 0, 0, 0, 0]
         self.stock = stock
         self.R = R
         self.Q = 0
@@ -50,8 +52,20 @@ class Warehouse:
             print(r.name, ", stock: ", r.current_inv, ", ip:", r.ip(), ", pending_arrivals: ", r.pending_arrivals)
 
     def update_morning(self, period):
+        self.doc_arrivals.append(0)
+        self.doc_arrivals[period] = self.pending_arrivals[0]
+
         for r in self.retailers:
             r.update_morning(period)
+
+    def update_self(self):
+        self.stock += self.pending_arrivals[0]
+        self.pending_arrivals[0] = 0
+        self.pending_arrivals.append(0)
+        del self.pending_arrivals[:1]
+
+    def update_doc_inv(self):  # to be called after pending arrivals and orders of retailers have been processed
+        self.doc_inv.append(self.stock)
 
     def update_evening(self):
         for r in self.retailers:
@@ -65,10 +79,3 @@ class Warehouse:
 
     def add_stock(self, amount):
         self.pending_arrivals[self.lead] = amount
-
-    def update_self(self):
-        self.stock += self.pending_arrivals[0]
-        self.pending_arrivals[0] = 0
-        self.pending_arrivals.append(0)
-        del self.pending_arrivals[:1]
-        pass
