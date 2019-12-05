@@ -15,31 +15,47 @@ class Simulation:
         self.num_retailers = num_retailers
         for i in range(num_retailers):
             if stochastic:
-                random = rand.binomial(20, 0.5,
-                                       self.length)  # todo: josef: what kind of distribution? what package? poisson/ neg binomial
-
+                self.seed = rand.randint(0, 10000, 1)[0]  # todo: wieder seedfrei am ende, nur fürs testen
+                rand.seed(self.seed)
+                random = rand.negative_binomial(4, 0.4, length)
             else:
                 random = None
             r = rt.Retailer("retailer " + str(i), self.length, demands=random)
             self.warehouse.add_retailer(r)
 
     def collect_statistics(self):
+
         rt_invs = []
         rt_demands = []
+        rt_pending = []
         rt_param_h = []
         rt_param_s = []
+        rt_param_fixed = []
         total_h = []
         total_s = []
+        total_f = []
+
+        # kosten warehouse
+        w = self.warehouse
+        wh_stocks = None  # doesnt exist - not doc_stocks
+        wh_pending = None  # doesnt exist
+
 
         for r in self.warehouse.retailers:
             rt_invs.append(r.doc_inv)
             rt_demands.append(r.demands)
+            rt_pending.append(r.doc_arrivals)
             rt_param_h.append(r.c_holding)
             rt_param_s.append(r.c_shortage)
-
-        for i in range(len(rt_invs)):
+            rt_param_fixed.append(r.c_fixed_order)
+        for i in range(len(rt_invs)):  # entspricht anzahl retailer
             cost_h = 0
             cost_s = 0
+            cost_f = 0
+            for order in rt_pending[i]:
+                if order > 0:
+                    cost_f += rt_param_fixed[i]
+
             for inv, demand in zip(rt_invs[i], rt_demands[i]):
                 if inv >= demand:
                     cost_h += inv - 0.5 * demand
@@ -50,10 +66,15 @@ class Simulation:
                     cost_s += demand
             total_h.append(cost_h * rt_param_h[i])
             total_s.append(cost_s * rt_param_s[i])
-            self.stats = [total_h, total_s]
-        return self.stats
+            total_f.append(cost_f)
+
+
+
+        self.stats = [total_h, total_s, total_f]
+        return [total_h, total_s, total_f]
 
     def reset(self):
+        self.seed = None
         self.stats = None
         self.warehouse.reset()
 

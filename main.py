@@ -1,84 +1,63 @@
 import simulation
 import time
-from math import ceil
 import openpyxl
 
-sims = []
 
-total_fifo = 0
-total_mip = 0
+def print_results_to_sheet(results, sheet, offset_row, start_column):
+    for i in range(len(results)):
+        for j in range(len(results[i])):
+            sheet.cell(row=first_row + offset_row, column=start_column + 3 * j + i, value=round(results[i][j], 2))
+
+
+# todo: 1. gleiche parameter (auch R), verschiedene random values -> große schwankungen bei mip - mit höheren werten für R?
+
+# todo: 3. costs of warehouse mit rein in Endkostenberechnung
+
+# todo: alles soweit niederschreiben über implementierung - paper lesen - literaturteil thomas lesen
+
 reps = 1
-start_time = time.time()
+R_start = 30
+
 exec_times = []
-last_time = 0
+last_time = time.time()
 
-wb = openpyxl.load_workbook('/Users/jasperinho/PycharmProjects/thesis_MIP/analysis_first.xlsx')
-print(wb.sheetnames)
+first_row = 4
+wb = openpyxl.load_workbook('/Users/jasperinho/PycharmProjects/thesis_MIP/generated_sheets/current.xlsx',
+                            read_only=False)
+length = 100
+
 sheet = wb[wb.sheetnames[0]]
+sheet["V4"] = length
 
-for period in range(reps):
+for current in range(reps):
+    sim = simulation.Simulation(length=length, stock=100, stochastic=True)
 
-    print(period / reps)
-    sim = simulation.Simulation(length=100, stock=100, stochastic=True)
+    print(current / reps)
+
+    r1 = sim.warehouse.retailers[0]
+    r1.c_holding = 0.3
+    r1.c_shortage = 4
+    sim.warehouse.R = R_start + current
+
+    sheet["A%d" % (first_row + current)] = sim.warehouse.R
+    sheet["B%d" % (first_row + current)] = sim.seed
     sim.run(FIFO=False)
-
     after1 = time.time()
-
     results_mip = sim.collect_statistics()
     sim.reset()
 
-    print("Single execution times - ub, average time: ", [sum(i) / len(i) for i in zip(
-        *sim.times)])  # todo: josef: wieso geht inventory wh immer weiter runter?
-    number_intervals = 10
-    interval_size = ceil(len(sim.times) / number_intervals)
-    for interval in range(number_intervals):
-        lb = interval * interval_size
-        ub = (interval + 1) * interval_size
-        if ub > len(sim.times):
-            ub = len(sim.times)
-        if not ub - lb == 0:
-            print("interval: ", interval, "average: ", [sum(i[lb:ub]) / (ub - lb) for i in zip(*sim.times)])
-
-    print("last: ", [sum(i[-interval_size:]) / interval_size for i in zip(*sim.times)])
+    print_results_to_sheet(results_mip, sheet, current, 5)
 
     sim.run(FIFO=True)
     results_fifo = sim.collect_statistics()
+    sim.reset()
 
+    print_results_to_sheet(results_fifo, sheet, current, 13)
+    print(results_mip, results_fifo)
     after2 = time.time()
 
-    if period is 0:
-        exec_times.append((after1 - start_time, after2 - after1))
-    else:
-        exec_times.append((after1 - last_time, after2 - after1))
+    sheet["C%d" % (first_row + current)] = after1 - last_time
+    sheet["D%d" % (first_row + current)] = after2 - after1
     last_time = after2
-    # print("(mip-based simulation, fifo simulation)", exec_times)
 
-
-results_difference = []  # mip - fifo
-results_percent = []
-
-for i, j in zip(results_mip, results_fifo):
-    temp = []
-    temp2 = []
-    for r in range(len(i)):
-        total_mip += i[r]
-        total_fifo += j[r]
-        temp.append(i[r] - j[r])
-        if j[r] is not 0:
-            temp2.append(i[r] / j[r])
-        else:
-            temp2.append((i[r], j[r]))
-    results_difference.append(temp)
-    results_percent.append(temp2)
-sims.append((total_mip, total_fifo))
-print("\nresults_mip:", results_mip, " \nresults_fifo:", results_fifo)
-print("total costs in - mip:", round(total_mip, 2), "in fifo:", round(total_fifo, 2))
-print("exec_times: ", exec_times)
-
-diffs = []
-diffs_percent = []
-for i, j in sims:
-    diffs.append(round(i - j, 2))
-    diffs_percent.append(round(i / j, 4) * 100)
-print(diffs)
-print(diffs_percent[0], 'percent')
+wb.save("generated_sheets/current.xlsx")

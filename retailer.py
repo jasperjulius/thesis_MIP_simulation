@@ -5,7 +5,7 @@ class Retailer:
     # todo: params von thomas
 
     def __init__(self, name, periods, lead=2, av_demand=10, c_holding=0.2, c_shortage=5, current_inv=30,
-                 c_fixed_order=2.0, R=40, demands=None):
+                 c_fixed_order=1.0, R=40, demands=None):
         self.name = name
         self.lead = lead
         self.current_inv = current_inv

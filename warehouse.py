@@ -1,9 +1,7 @@
 from math import ceil
 
 
-class Warehouse:  # todo: josef: with which rule is warehouse replenished? -> same as retailers!
-    # todo: josef: costs of warehouse auch includen in total costs? gute frage
-    # todo: josef: wie wähle ich die parameter (holding, shortage usw.) -> thomas arbeit
+class Warehouse:
 
     def __init__(self, stock=100, R=60, lead=2, c_holding=0.2, c_fixed_order=2.0):
         self.av_demand = 0
