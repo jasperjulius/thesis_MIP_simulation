@@ -25,7 +25,7 @@ wb = openpyxl.load_workbook('/Users/jasperinho/PycharmProjects/thesis_MIP/genera
 length = 10000
 
 sheet = wb[wb.sheetnames[0]]
-sheet["AD4"] = length
+sheet["AH4"] = length
 
 for current in range(reps):
     sim = simulation.Simulation(length=length, stock=100, stochastic=True)
