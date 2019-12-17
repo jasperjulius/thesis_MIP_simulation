@@ -7,14 +7,14 @@ class Retailer:
     def __init__(self, name, periods, lead=2, av_demand=10, c_holding=0.2, c_shortage=5, current_inv=30,
                  c_fixed_order=1.0, R=40, demands=None):
         self.name = name
-        self.lead = lead    #
-        self.current_inv = current_inv  #
-        self.av_demand = av_demand  #
-        self.c_holding = c_holding  #
-        self.c_shortage = c_shortage    #
-        self.doc_inv = []  # every period's inventory after arrivals, before demand
-        self.c_fixed_order = c_fixed_order  #
-        self.pending_arrivals = self.construct_pending()    #
+        self.lead = lead    # [0,0,0], [1,1,1], [2,2,2]     thomas, pp. 35-36
+        self.current_inv = current_inv
+        self.av_demand = av_demand  # [2,4]
+        self.c_holding = c_holding  # [2,2,2]
+        self.c_shortage = c_shortage    # [4,4], [10,10], [20,20]
+        self.doc_inv = []
+        self.c_fixed_order = c_fixed_order  # [20,5,5]
+        self.pending_arrivals = self.construct_pending()
         self.doc_arrivals = self.construct_pending()
         self.R = R  #
         self.Q = ceil((2*av_demand*c_fixed_order/c_holding)**0.5)   #

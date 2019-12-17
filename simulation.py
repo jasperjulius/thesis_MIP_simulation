@@ -120,6 +120,10 @@ class Simulation:
 
         for r in self.warehouse.retailers:
             ips.append(r.ip())
+            #ips. enumerate, sort ascending
+            #for num, i in enum
+                #...
+
         if ips[0] <= ips[1]:
             amounts[1] = 0
         else:
