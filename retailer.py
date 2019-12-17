@@ -2,12 +2,11 @@ from math import ceil
 
 class Retailer:
 
-    # todo: params von thomas
 
     def __init__(self, name, periods, lead=2, av_demand=10, c_holding=0.2, c_shortage=5, current_inv=30,
                  c_fixed_order=1.0, R=40, demands=None):
         self.name = name
-        self.lead = lead    # [0,0,0], [1,1,1], [2,2,2]     thomas, pp. 35-36
+        self.lead = lead    # [0,0,0], [1,1,1], [2,2,2]     thomas, pp. 35-36    # todo: params von thomas
         self.current_inv = current_inv
         self.av_demand = av_demand  # [2,4]
         self.c_holding = c_holding  # [2,2,2]

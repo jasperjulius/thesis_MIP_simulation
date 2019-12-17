@@ -14,7 +14,9 @@ def print_results_to_sheet(results, sheet, offset_row, start_column):
 # todo: 1. gleiche parameter (auch R), verschiedene random values -> große schwankungen bei mip - mit höheren werten für R?
 # todo 2. nach umstellung auf neg_binomial demand sind keine schwankungen mehr bei mip, sondern bei FIFO bei werten von warehouse.R um 40
 # todo: alles soweit niederschreiben über implementierung - paper lesen - literaturteil thomas lesen
-# todo: josef: thomas av demand ist sehr niedrig, dadurch sind schwankungen relativ klein nehme ich an
+# todo: josef: (thomas av demand ist sehr niedrig, dadurch sind schwankungen relativ klein nehme ich an)
+# todo: josef: welche richtung? mehr retailer? mehr stufen? keine bstellungen mehr, sondern jede periode mip?
+
 
 exec_times = []
 last_time = time.time()

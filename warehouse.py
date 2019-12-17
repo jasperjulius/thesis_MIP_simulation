@@ -3,7 +3,7 @@ from math import ceil
 
 class Warehouse:
 
-    def __init__(self, stock=100, R=60, lead=2, c_holding=0.1, c_fixed_order=1.5):
+    def __init__(self, stock=100, R=60, lead=2, c_holding=0.1, c_fixed_order=1.5):  #todo: params von thomas, stehen in retailer
         self.av_demand = 0
         self.c_fixed_order = c_fixed_order
         self.c_holding = c_holding

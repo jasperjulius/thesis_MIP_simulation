@@ -4,7 +4,6 @@ import warehouse as wh
 import numpy.random as rand
 import time
 
-
 class Simulation:
 
     def __init__(self, num_retailers=2, length=100, stock=100, stochastic=True):
@@ -17,7 +16,7 @@ class Simulation:
             if stochastic:
                 self.seed = rand.randint(0, 10000, 1)[0]  # todo: wieder seedfrei am ende, nur fürs testen
                 rand.seed(self.seed)
-                random = rand.negative_binomial(4, 0.4, length)
+                random = rand.negative_binomial(4, 0.4, length) #todo: change to thomas distribution, compound poisson
             else:
                 random = None
             r = rt.Retailer("retailer " + str(i), self.length, demands=random)
@@ -115,23 +114,27 @@ class Simulation:
             self.warehouse.update_evening()
             # self.warehouse.print_stocks(i)
 
-    def fifo(self, amounts):  # todo: change to multiretailer implementation
+    def fifo(self, amounts):
+
+        def takeSecond(elem):
+            return elem[1]
+
         ips = []
+        i = 0
+        stock = self.warehouse.stock
 
         for r in self.warehouse.retailers:
-            ips.append(r.ip())
-            #ips. enumerate, sort ascending
-            #for num, i in enum
-                #...
+            ips.append((i, r.ip()))
+            i += 1
 
-        if ips[0] <= ips[1]:
-            amounts[1] = 0
-        else:
-            amounts[0] = 0
+        ips.sort(key=takeSecond)
 
-        for i in range(len(amounts)):
-            if amounts[i] > self.warehouse.stock:
-                amounts[i] = 0
+        for num, ip in ips:
+            if amounts[num] > stock:
+                amounts[num] = 0
+            else:
+                stock -= amounts[num]
+
 
     def amount_requested(self, retailer):
         R = retailer.R
