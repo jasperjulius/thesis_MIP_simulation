@@ -4,8 +4,7 @@ import time
 
 class MIP:
 
-    def __init__(self, times):
-        self.times = times
+    def __init__(self):
         self.model = Model()
         self.model.setParam('OutputFlag', False)
         self.p_stock_warehouse = None
@@ -24,7 +23,7 @@ class MIP:
         elif stock <= 0:
             return 0
 
-    def holding_objective_old(self, X_holding,
+    def holding_objective(self, X_holding,
                               i):  # average inventory of retailer i in period t - only for t >= leadtime
         count = 0
         graph = []
@@ -32,7 +31,7 @@ class MIP:
 
         for t in range(self.p_lead[i], self.p_lead[i] * 2 + 1):  # how many periods into future?
 
-            x = self.p_current_inv[i] + sum(self.p_pending_arrivals[i][:t + 1]) - self.p_av_demand[i] * (t + 0.5)
+            x = self.p_current_inv[i] + sum(self.p_pending_arrivals[i][:t + 1]) - self.p_av_demand[i] * t   # nimmt inventory am anfang der periode (höhster punkt)
 
             if count == 0:
                 # add initial point on x axis (-M, 0)
@@ -55,14 +54,12 @@ class MIP:
         self.model.setPWLObj(X_holding[i], list_x, list_y)
         return
 
-    def holding_objective(self, X_holding, i):  # average inventory of retailer i in period t - only for t >= leadtime
+    def holding_objective_alt(self, X_holding, i):  # average inventory of retailer i in period t - only for t >= leadtime
 
-        # no up, avg: 0.000008
         graph = []
         stocks = []
         for t in range(self.p_lead[i], self.p_lead[i] * 2 + 1):  # how many periods into future?
             stocks.append(self.p_current_inv[i] + sum(self.p_pending_arrivals[i][:t + 1]) - self.p_av_demand[i] * t)
-
 
         upper_bound = -1 * (stocks[-1] - self.p_av_demand[i]) + 1
         if upper_bound > self.p_stock_warehouse >= 0:
@@ -106,8 +103,9 @@ class MIP:
                 loss = ip[j - 1] - ip[j]
 
             missed_deliveries.append(loss)
-            sum_missed_deliveries = sum(missed_deliveries)
-            total_loss = sum_missed_deliveries * self.p_c_shortage[i]
+
+        sum_missed_deliveries = sum(missed_deliveries)
+        total_loss = sum_missed_deliveries * self.p_c_shortage[i]
 
         graph = [(0, total_loss), (sum_missed_deliveries, 0), (sum_missed_deliveries + 1, 0)]
         list_x, list_y = map(list, zip(*graph))
@@ -183,7 +181,6 @@ class MIP:
         X_fixed = self.model.addVars(num_i, vtype=GRB.BINARY, name='binary delivering to i')
 
         for i in range(num_i):
-
             # trend up!!! avg first 40: 0.0005 , last 40: 0.008 (~factor 16)
             self.holding_objective(X_holding, i)
 
@@ -197,10 +194,10 @@ class MIP:
         self.model.addConstr(
             quicksum(X_holding[i] for i in X_holding) <= self.p_stock_warehouse)  # ct max capacity at warehouse
         self.model.addConstrs(X_holding[i] == X_shortage[i] for i in X_holding)  # ct(i) hilfsvariable constraint
-        self.model.addConstrs(X_holding[i] <= X_fixed[i] * self.p_stock_warehouse for i in X_holding)  # ct fixed order costs
+        self.model.addConstrs(
+            X_holding[i] <= X_fixed[i] * self.p_stock_warehouse for i in X_holding)  # ct fixed order costs
 
-        self.model.optimize()   # no up, avg: 0.0009
-
+        self.model.optimize()  # no up, avg: 0.0009
 
         # model.printAttr('x')
         final = []

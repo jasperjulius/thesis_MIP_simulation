@@ -1,7 +1,7 @@
 import simulation
 import time
 import openpyxl
-from r import r
+import r as rgen
 from math import trunc
 
 
@@ -10,34 +10,40 @@ def print_results_to_sheet(results, sheet, offset_row, start_column):
         for j in range(len(results[i])):
             sheet.cell(row=first_row + offset_row, column=start_column + 3 * j + i, value=round(results[i][j], 2))
 
+# !!!bug in warehouse.reset: schwankungen nochmal betrachten
+# nach umstellung auf neg_binomial demand sind keine schwankungen mehr bei mip, sondern bei FIFO bei werten von warehouse.R um 40
 
-# todo: 1. gleiche parameter (auch R), verschiedene random values -> große schwankungen bei mip - mit höheren werten für R?
-# todo 2. nach umstellung auf neg_binomial demand sind keine schwankungen mehr bei mip, sondern bei FIFO bei werten von warehouse.R um 40
-# todo: alles soweit niederschreiben über implementierung - paper lesen - literaturteil thomas lesen
-# todo: josef: (thomas av demand ist sehr niedrig, dadurch sind schwankungen relativ klein nehme ich an)
-# todo: josef: welche richtung? mehr retailer? mehr stufen? keine bstellungen mehr, sondern jede periode mip?
+# todo: backlog B, pending deliveries als Q, IP einmal reinnehmen, E()-funktion gerade biegen
 
+# todo: fixed order costs gibt's nicht, sondern order setup costs, die beim retailer anfallen fürs bestellen
+#  fragestellung: wie häufig wird er im zeitraum (von t = 0 bis t = 2*L) nochmal bestellen?
+
+# todo: avInv berechnung umstellen, einfach inventory im zeitpunkt t nehmen für gesamte periode
+#   dazu nimmt man pyhs_inv_t = phys_inv_t-1 +pending arrivals_t - demand_t, und speichert die phys_invs ab
+#   das gleiche muss auch im modell wiedergespiegelt werden, und im MIP
+
+# todo: literatur für präsentation
 
 exec_times = []
-last_time = time.time()
-
 first_row = 4
-wb = openpyxl.load_workbook('/Users/jasperinho/PycharmProjects/thesis_MIP/generated_sheets/current.xlsx',
-                            read_only=False)
-length = 1000
+wb = openpyxl.load_workbook(
+    '/Users/jasperinho/PycharmProjects/thesis_MIP/generated_sheets/templates/template short.xlsx',
+    read_only=False)
+length = 100
 
 sheet = wb[wb.sheetnames[0]]
 sheet["AH4"] = length
-r = r(30, 30, 30, 50, 50, 50, 2, 2, 2)
+robj = rgen.R(2, 2, 2, 10, 10, 10, 1, 1, 1)
+last_time = time.time()
+r = robj.r()
 
 for current in r:
-
-    sim = simulation.Simulation(length=length, stock=100, stochastic=True)
+    sim = simulation.Simulation(length=length, stock=10, stochastic=True, thomas=True)
     print(current)
-
-    r1 = sim.warehouse.retailers[0]
-    r1.c_holding = 0.3
-    r1.c_shortage = 4
+    print(round(((current[3]/robj.duration)*100), 2),"%")
+    # r1 = sim.warehouse.retailers[0]
+    # r1.c_holding = 0.3
+    # r1.c_shortage = 4
 
     sim.warehouse.R = current[0]
     sim.warehouse.retailers[0].R = current[1]
@@ -59,7 +65,7 @@ for current in r:
     sim.reset()
 
     print_results_to_sheet(results_fifo, sheet, current[3], 18)
-    print(results_mip, results_fifo)
+    # print(results_mip, results_fifo)
     after2 = time.time()
 
     sheet["E%d" % (first_row + current[3])] = after1 - last_time

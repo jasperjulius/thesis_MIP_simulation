@@ -3,7 +3,13 @@ from math import ceil
 
 class Warehouse:
 
-    def __init__(self, stock=100, R=60, lead=2, c_holding=0.1, c_fixed_order=1.5):  #todo: params von thomas, stehen in retailer
+    def __init__(self, stock=100, R=60, lead=2, c_holding=0.1, c_fixed_order=1.5, thomas=False):  #todo: params von thomas, stehen in retailer
+
+        if thomas:
+            c_fixed_order = 20
+            c_holding = 1
+            stock = 10
+        self.thomas = thomas
         self.av_demand = 0
         self.c_fixed_order = c_fixed_order
         self.c_holding = c_holding
@@ -22,16 +28,19 @@ class Warehouse:
             r.reset()
         self.stock = self.doc_stock
         self.pending_arrivals = [0, 0, 0, 0, 0, 0]
+        self.doc_arrivals = [0, 0, 0, 0, 0, 0]
+        self.doc_inv = []
 
     # method for adding retailers
     def add_retailer(self, retailer):
         self.retailers.append(retailer)
-        demand = 0
-        for r in self.retailers:
-            demand += r.av_demand
+
+        demand = sum(r.av_demand for r in self.retailers)
+
         self.av_demand = demand
         self.Q = ceil((2 * demand * self.c_fixed_order / self.c_holding) ** 0.5)
-        pass
+        if self.thomas is True:
+            self.Q = 12
 
     # method for sending to retailers
     def send_stock(self, amount, number_retailer):

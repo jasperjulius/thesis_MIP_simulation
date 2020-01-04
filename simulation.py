@@ -2,24 +2,32 @@ import MIP as mip
 import retailer as rt
 import warehouse as wh
 import numpy.random as rand
-import time
+
 
 class Simulation:
 
-    def __init__(self, num_retailers=2, length=100, stock=100, stochastic=True):
-        self.times = []
+    def __init__(self, num_retailers=2, length=100, stock=100, stochastic=True, thomas=False):
         self.length = length
-        self.warehouse = wh.Warehouse(stock=stock)
+        self.warehouse = wh.Warehouse(stock=stock, thomas=thomas)
         self.stats = None
         self.num_retailers = num_retailers
+
         for i in range(num_retailers):
+
             if stochastic:
+
                 self.seed = rand.randint(0, 10000, 1)[0]  # todo: wieder seedfrei am ende, nur fürs testen
                 rand.seed(self.seed)
-                random = rand.negative_binomial(4, 0.4, length) #todo: change to thomas distribution, compound poisson
+                if not thomas:  # todo: if not thomas
+                    random = rand.negative_binomial(4, 0.4, length)
+                else:
+                    random = rand.poisson(2 * i + 2, length)  # todo: find out parameter
+                    # todo:  alternatively compound poisson
+
             else:
                 random = None
-            r = rt.Retailer("retailer " + str(i), self.length, demands=random)
+
+            r = rt.Retailer(i, self.length, demands=random, thomas=thomas)
             self.warehouse.add_retailer(r)
 
     def collect_statistics(self):
@@ -61,11 +69,11 @@ class Simulation:
                 if order > 0:
                     cost_f += rt_param_fixed[i]
 
-            for inv, demand in zip(rt_invs[i], rt_demands[i]):
+            for inv, demand in zip(rt_invs[i], rt_demands[i]):  #todo: berechung der h, s korrekt?
                 if inv >= demand:
-                    cost_h += inv - 0.5 * demand
+                    cost_h += inv
                 elif inv > 0:
-                    cost_h += float(inv) / 2 * float(inv) / demand
+                    cost_h += inv
                     cost_s += demand - inv
                 elif inv <= 0:
                     cost_s += demand
@@ -77,7 +85,6 @@ class Simulation:
         return [total_h, total_s, total_f]
 
     def reset(self):
-        self.seed = None
         self.stats = None
         self.warehouse.reset()
 
@@ -93,16 +100,13 @@ class Simulation:
                 if FIFO:
                     self.fifo(amounts)  # currently only works for two retailers!
                 else:
-                    time_before = time.time()
-
                     if self.warehouse.stock is not 0:
-                        model = mip.MIP(self.times)
+                        model = mip.MIP()
                         model.set_params_warehouse(self.warehouse)
                         model.set_params_all_retailers(self.warehouse.retailers)
                         amounts = model.optimal_quantities()
                     else:
                         amounts = [0 for i in range(self.num_retailers)]
-                    self.times.append((time.time() - time_before,))
 
                     # print('SIMULATION! period:', i, 'stock_before:', self.warehouse.stock, 'quantities:', amounts)
 
@@ -134,7 +138,6 @@ class Simulation:
                 amounts[num] = 0
             else:
                 stock -= amounts[num]
-
 
     def amount_requested(self, retailer):
         R = retailer.R
