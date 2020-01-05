@@ -58,7 +58,7 @@ class Warehouse:
     def print_stocks(self, period):
         print("period: ", period, "warehouse - stock: ", self.stock)
         for r in self.retailers:
-            print(r.name, ", stock: ", r.current_inv, ", ip:", r.ip(), ", pending_arrivals: ", r.pending_arrivals)
+            print(r.number, ", stock: ", r.current_inv, ", ip:", r.ip(), ", pending_arrivals: ", r.pending_arrivals)
 
     def update_morning(self, period):
         self.doc_arrivals.append(0)

@@ -14,24 +14,19 @@ class MIP:
         self.p_c_shortage = []
         self.p_c_fixed_order = []
         self.p_current_inv = []
-
-    def average(self, stock, demand):
-        if stock >= demand:
-            return stock - 0.5 * demand
-        elif stock > 0:
-            return float(stock) / 2 * float(stock) / demand
-        elif stock <= 0:
-            return 0
+        self.p_pending_arrivals = []
 
     def holding_objective(self, X_holding,
-                              i):  # average inventory of retailer i in period t - only for t >= leadtime
+                          i):  # average inventory of retailer i in period t - only for t >= leadtime
         count = 0
         graph = []
         x = 0
 
-        for t in range(self.p_lead[i], self.p_lead[i] * 2 + 1):  # how many periods into future?
+        for t in range(self.p_lead[i],
+                       self.p_lead[i] * 2):  # how many periods into future? aktuell: bei L=2 => range(2,4) => 2,3
 
-            x = self.p_current_inv[i] + sum(self.p_pending_arrivals[i][:t + 1]) - self.p_av_demand[i] * t   # nimmt inventory am anfang der periode (höhster punkt)
+            x = self.p_current_inv[i] + sum(self.p_pending_arrivals[i][:t + 1]) - self.p_av_demand[
+                i] * t  # nimmt inventory am anfang der periode (höhster punkt)
 
             if count == 0:
                 # add initial point on x axis (-M, 0)
@@ -54,66 +49,36 @@ class MIP:
         self.model.setPWLObj(X_holding[i], list_x, list_y)
         return
 
-    def holding_objective_alt(self, X_holding, i):  # average inventory of retailer i in period t - only for t >= leadtime
+    def expected_invs(self, i):
+        x = []
+        for t in range(self.p_lead[i],
+                       self.p_lead[i] * 2):  # how many periods into future? aktuell: bei L=2 => range(2,4) => 2,3
 
-        graph = []
-        stocks = []
-        for t in range(self.p_lead[i], self.p_lead[i] * 2 + 1):  # how many periods into future?
-            stocks.append(self.p_current_inv[i] + sum(self.p_pending_arrivals[i][:t + 1]) - self.p_av_demand[i] * t)
+            x.append(self.p_current_inv[i] + sum(self.p_pending_arrivals[i][:t + 1]) - self.p_av_demand[i] * t)
 
-        upper_bound = -1 * (stocks[-1] - self.p_av_demand[i]) + 1
-        if upper_bound > self.p_stock_warehouse >= 0:
-            upper_bound = self.p_stock_warehouse
-        if upper_bound <= 0:
-            upper_bound = 1
-
-        for x in range(upper_bound + 1):
-            av_stock = 0
-            for stock in stocks:  # calculate average stock of each period
-                av_stock += self.average(stock + x, self.p_av_demand[i])
-            graph.append((x, av_stock))
-
-        # transform tuples into two lists
-        list_x, list_y = map(list, zip(*graph))
-
-        # scale graph according to holding costs of i
-        list_y = [j * self.p_c_holding[i] for j in list_y]
-
-        # add curve as one connected, but not continuous obj function for variable X[i]
-        self.model.setPWLObj(X_holding[i], list_x, list_y)
-        return
+        return x
 
     def shortage_objective(self, X_shortage, i):
-        ip = []
-        missed_deliveries = []
-        total_loss = 0
-        sum_missed_deliveries = 0
 
-        for t in range(self.p_lead[i], self.p_lead[i] * 2 + 2):
-            ip.append(self.p_current_inv[i] + sum(self.p_pending_arrivals[i][:t + 1]) - self.p_av_demand[i] * t)
+        count = 0
+        graph = []
+        x = self.expected_invs(i)
+        x = [-i for i in x if i < 0]
+        x.reverse()
+        graph.append((max(x, default=0) + 1, 0))
 
-        for j in range(1, len(ip)):
-            loss = 0
+        for current in x:
+            graph.append((current, graph[-1][1] + count * (graph[-1][0] - current)))
+            count += 1
 
-            if ip[j - 1] >= 0 and ip[j] >= 0:
-                loss = 0
-            if ip[j - 1] >= 0 > ip[j]:
-                loss = -ip[j]
-            if ip[j - 1] < 0 and ip[j] < 0:
-                loss = ip[j - 1] - ip[j]
-
-            missed_deliveries.append(loss)
-
-        sum_missed_deliveries = sum(missed_deliveries)
-        total_loss = sum_missed_deliveries * self.p_c_shortage[i]
-
-        graph = [(0, total_loss), (sum_missed_deliveries, 0), (sum_missed_deliveries + 1, 0)]
+        # insert final (first) point with x = 0, maximal y calculated as current final y in list + count (+1?)
+        graph.append((0, graph[-1][1] + count * (graph[-1][0])))
+        graph.reverse()
         list_x, list_y = map(list, zip(*graph))
 
         self.model.setPWLObj(X_shortage[i], list_x, list_y)
 
     # erster wert jeweils für t = 0, also "jetzt"; aktuell wird so gerechnet, als kämen deliveries first thing in the morning an, und sind somit im täglichen inventory zur berechnung der holding/shortage costs mit drin
-    p_pending_arrivals = []
 
     def set_params_warehouse(self, warehouse):
         if warehouse.stock > 0:
@@ -142,34 +107,6 @@ class MIP:
         self.p_current_inv.append(retailer.current_inv)
         self.p_c_fixed_order.append(retailer.c_fixed_order)
         self.p_pending_arrivals.append(retailer.pending_arrivals)
-
-    def update_params(self, stock_warehouse=None, lead=None, av_demand=None, c_holding=None, c_shortage=None,
-                      current_inv=None,
-                      c_fixed_order=None, outstanding_deliveries=None):
-
-        if stock_warehouse is not None:
-            self.p_stock_warehouse = stock_warehouse
-
-        if lead is not None:
-            self.p_lead = lead
-
-        if av_demand is not None:
-            self.p_av_demand = av_demand
-
-        if c_holding is not None:
-            self.p_c_holding = c_holding
-
-        if c_shortage is not None:
-            self.p_c_shortage = c_shortage
-
-        if current_inv is not None:
-            self.p_current_inv = current_inv
-
-        if c_fixed_order is not None:
-            self.p_c_fixed_order = c_fixed_order
-
-        if outstanding_deliveries is not None:
-            self.p_pending_arrivals = outstanding_deliveries
 
     def optimal_quantities(self):
 
@@ -204,3 +141,40 @@ class MIP:
         for i in range(num_i):
             final.append(int(X_holding.get(i).X))
         return final
+
+    def holding_objective_alt(self, X_holding,
+                              i):  # average inventory of retailer i in period t - only for t >= leadtime
+
+        graph = []
+        stocks = []
+        for t in range(self.p_lead[i], self.p_lead[i] * 2 + 1):  # how many periods into future?
+            stocks.append(self.p_current_inv[i] + sum(self.p_pending_arrivals[i][:t + 1]) - self.p_av_demand[i] * t)
+
+        upper_bound = -1 * (stocks[-1] - self.p_av_demand[i]) + 1
+        if upper_bound > self.p_stock_warehouse >= 0:
+            upper_bound = self.p_stock_warehouse
+        if upper_bound <= 0:
+            upper_bound = 1
+
+        for x in range(upper_bound + 1):
+            av_stock = 0
+            for stock in stocks:  # calculate average stock of each period
+                av_stock += self.average(stock + x, self.p_av_demand[i])
+            graph.append((x, av_stock))
+
+        # transform tuples into two lists
+        list_x, list_y = map(list, zip(*graph))
+
+        # scale graph according to holding costs of i
+        list_y = [j * self.p_c_holding[i] for j in list_y]
+
+        # add curve as one connected, but not continuous obj function for variable X[i]
+        self.model.setPWLObj(X_holding[i], list_x, list_y)
+
+    def average(self, stock, demand):
+        if stock >= demand:
+            return stock - 0.5 * demand
+        elif stock > 0:
+            return float(stock) / 2 * float(stock) / demand
+        elif stock <= 0:
+            return 0

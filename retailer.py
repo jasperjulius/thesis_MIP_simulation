@@ -2,7 +2,7 @@ from math import ceil
 
 class Retailer:
 
-    def __init__(self, number, periods, lead=2, av_demand=10, c_holding=0.2, c_shortage=5, current_inv=30,
+    def __init__(self, number, periods, seed=None, lead=2, av_demand=10, c_holding=0.2, c_shortage=0.4, current_inv=30,
                  c_fixed_order=1.0, R=40, demands=None, thomas=False):
         if thomas:
             c_fixed_order = 5
@@ -11,6 +11,7 @@ class Retailer:
             av_demand = 2 + 2 * number
             current_inv = av_demand * lead
 
+        self.seed = seed
         self.thomas = thomas
         self.number = number
         self.lead = lead  # [0,0,0], [1,1,1], [2,2,2]     thomas, pp. 35-36    # todo: params von thomas

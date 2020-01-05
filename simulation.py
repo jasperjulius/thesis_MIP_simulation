@@ -16,18 +16,18 @@ class Simulation:
 
             if stochastic:
 
-                self.seed = rand.randint(0, 10000, 1)[0]  # todo: wieder seedfrei am ende, nur fürs testen
-                rand.seed(self.seed)
+                seed = rand.randint(0, 10000, 1)[0]  # todo: wieder seedfrei am ende, nur fürs testen
+                rand.seed(seed)
                 if not thomas:  # todo: if not thomas
                     random = rand.negative_binomial(4, 0.4, length)
                 else:
                     random = rand.poisson(2 * i + 2, length)  # todo: find out parameter
-                    # todo:  alternatively compound poisson
+                    # todo: alternatively compound poisson
 
             else:
                 random = None
 
-            r = rt.Retailer(i, self.length, demands=random, thomas=thomas)
+            r = rt.Retailer(i, self.length, seed=seed, demands=random, thomas=thomas)
             self.warehouse.add_retailer(r)
 
     def collect_statistics(self):
@@ -69,14 +69,12 @@ class Simulation:
                 if order > 0:
                     cost_f += rt_param_fixed[i]
 
-            for inv, demand in zip(rt_invs[i], rt_demands[i]):  #todo: berechung der h, s korrekt?
-                if inv >= demand:
+            for inv, demand in zip(rt_invs[i], rt_demands[i]):  # simplifizierte version
+                if inv > 0:
                     cost_h += inv
-                elif inv > 0:
-                    cost_h += inv
-                    cost_s += demand - inv
-                elif inv <= 0:
-                    cost_s += demand
+                elif inv < 0:
+                    cost_s += -inv
+
             total_h.append(cost_h * rt_param_h[i])
             total_s.append(cost_s * rt_param_s[i])
             total_f.append(cost_f)
@@ -88,7 +86,7 @@ class Simulation:
         self.stats = None
         self.warehouse.reset()
 
-    def run(self, FIFO=False):
+    def run(self, FIFO=False, RAND=False):
         for i in range(self.length):
             # self.warehouse.print_stocks(i)
             self.warehouse.update_morning(i)
@@ -99,6 +97,8 @@ class Simulation:
             if sum(amounts) > self.warehouse.stock:  # decision rule time
                 if FIFO:
                     self.fifo(amounts)  # currently only works for two retailers!
+                elif RAND:
+                    self.random(amounts)
                 else:
                     if self.warehouse.stock is not 0:
                         model = mip.MIP()
@@ -118,7 +118,29 @@ class Simulation:
             self.warehouse.update_evening()
             # self.warehouse.print_stocks(i)
 
+    def amounts_pre(self, amounts):  # todo: test
+        # reduce to first multiple of lot possible
+        stock = self.warehouse.stock
+        qs = [self.warehouse.retailers[i].Q for i in range(2)]
+        for i in range(len(amounts)):
+            while amounts[i] > stock:
+                amounts[i] = amounts[i] - qs[i]
+
+    def random(self,
+               amounts):  # BAUSTELLE - sendet zu hohe mengen randomly chooses one of the retailers to receive tha product
+        for i in amounts:
+            if i > self.warehouse.stock:
+                i = 0
+
+        number_retailers = len(self.warehouse.retailers)
+        chosen = rand.randint(0, number_retailers - 1)
+        for i in range(number_retailers):
+            if not i == chosen:
+                amounts[i] = 0
+
     def fifo(self, amounts):
+
+        self.amounts_pre(amounts)
 
         def takeSecond(elem):
             return elem[1]
