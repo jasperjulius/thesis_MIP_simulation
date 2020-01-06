@@ -2,7 +2,7 @@ import MIP as mip
 import retailer as rt
 import warehouse as wh
 import numpy.random as rand
-
+import mytimes
 
 class Simulation:
 
@@ -88,6 +88,9 @@ class Simulation:
 
     def run(self, FIFO=False, RAND=False):
         for i in range(self.length):
+            if i % 1000 == 0:
+                mytimes.next_interval()
+
             # self.warehouse.print_stocks(i)
             self.warehouse.update_morning(i)
             self.warehouse.update_self()
@@ -102,8 +105,7 @@ class Simulation:
                 else:
                     if self.warehouse.stock is not 0:
                         model = mip.MIP()
-                        model.set_params_warehouse(self.warehouse)
-                        model.set_params_all_retailers(self.warehouse.retailers)
+                        model.set_params(self.warehouse)
                         amounts = model.optimal_quantities()
                     else:
                         amounts = [0 for i in range(self.num_retailers)]
@@ -118,7 +120,7 @@ class Simulation:
             self.warehouse.update_evening()
             # self.warehouse.print_stocks(i)
 
-    def amounts_pre(self, amounts):  # todo: test
+    def amounts_pre(self, amounts):
         # reduce to first multiple of lot possible
         stock = self.warehouse.stock
         qs = [self.warehouse.retailers[i].Q for i in range(2)]
@@ -127,7 +129,7 @@ class Simulation:
                 amounts[i] = amounts[i] - qs[i]
 
     def random(self,
-               amounts):  # BAUSTELLE - sendet zu hohe mengen randomly chooses one of the retailers to receive tha product
+               amounts):  # todo: BAUSTELLE - sendet zu hohe mengen randomly chooses one of the retailers to receive tha product
         for i in amounts:
             if i > self.warehouse.stock:
                 i = 0

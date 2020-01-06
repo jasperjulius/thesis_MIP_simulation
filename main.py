@@ -3,7 +3,7 @@ import time
 import openpyxl
 import r as rgen
 from math import trunc
-
+import mytimes
 
 def print_results_to_sheet(results, sheet, offset_row, start_column):
     for i in range(len(results)):
@@ -11,8 +11,7 @@ def print_results_to_sheet(results, sheet, offset_row, start_column):
             sheet.cell(row=first_row + offset_row, column=start_column + 3 * j + i, value=round(results[i][j], 2))
 
 
-# !!! bug in warehouse.reset: schwankungen nochmal betrachten
-# nach umstellung auf neg_binomial demand sind keine schwankungen mehr bei mip, sondern bei FIFO bei werten von warehouse.R um 40
+# schwankungen behoben, jetzt ist FIFO besser
 
 # todo: fixed order costs gibt's nicht, sondern order setup costs, die beim retailer anfallen fürs bestellen
 #  fragestellung: wie häufig wird er im zeitraum (von t = 0 bis t = 2*L) nochmal bestellen?
@@ -24,20 +23,21 @@ def print_results_to_sheet(results, sheet, offset_row, start_column):
 # todo: backlog B, pending deliveries als Q, IP einmal reinnehmen, E()-funktion gerade biegen
 # todo: literatur für präsentation
 
-exec_times = []
 first_row = 4
+length = 30000
 wb = openpyxl.load_workbook(
     '/Users/jasperinho/PycharmProjects/thesis_MIP/generated_sheets/templates/template short.xlsx',
     read_only=False)
-length = 1000
 
 sheet = wb[wb.sheetnames[0]]
 sheet["AH4"] = length
-robj = rgen.R(20, 20, 20, 30, 30, 30, 3, 3, 3)
-robj_repeat = rgen.R(20, 0, 0, 60, 0, 0, 10, 1, 1, repeat=10)  # todo: test, um schwankungen zu monitoren
+# robj = rgen.R(20, 20, 20, 50, 50, 50, 2, 2, 2)
+robj = rgen.R(20, 0, 0, 20, 0, 0, 1, 1, 1, repeat=1)
+# r = robj.r()
+r = robj.r_same()
 
 last_time = time.time()
-r = robj_repeat.r_same()   # todo: hier
+
 
 for current in r:
     sim = simulation.Simulation(length=length, stock=10, stochastic=True, thomas=False)
@@ -54,8 +54,11 @@ for current in r:
     sheet["A%d" % (first_row + current[3])] = sim.warehouse.R
     sheet["B%d" % (first_row + current[3])] = sim.warehouse.retailers[0].R
     sheet["C%d" % (first_row + current[3])] = sim.warehouse.retailers[1].R
-    sheet["D%d" % (first_row + current[3])] = str(sim.warehouse.retailers[0].seed) +","+ str(sim.warehouse.retailers[1].seed)
+    sheet["D%d" % (first_row + current[3])] = str(sim.warehouse.retailers[0].seed) + "," + str(
+        sim.warehouse.retailers[1].seed)
     sim.run(FIFO=False)
+    print("mytimes.exec_times: ", mytimes.exec_times)
+    mytimes.next_group()
     after1 = time.time()
     results_mip = sim.collect_statistics()
     sim.reset()
@@ -63,6 +66,8 @@ for current in r:
     print_results_to_sheet(results_mip, sheet, current[3], 7)
 
     sim.run(FIFO=True)
+    print("mytimes.exec_times: ", mytimes.exec_times)
+
     results_fifo = sim.collect_statistics()
     sim.reset()
 
