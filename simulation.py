@@ -3,6 +3,25 @@ import retailer as rt
 import warehouse as wh
 import numpy.random as rand
 import mytimes
+import time
+from math import ceil
+
+
+
+
+def amount_requested(retailer):
+    R = retailer.R
+    Q = retailer.Q
+    ip = retailer.ip()
+    return max(0, ceil((R - ip) / Q)) * Q
+
+
+def amounts_requested(warehouse, i):
+    a = []
+    for r in warehouse.retailers:
+        a.append(amount_requested(r))
+    return a
+
 
 class Simulation:
 
@@ -29,6 +48,46 @@ class Simulation:
 
             r = rt.Retailer(i, self.length, seed=seed, demands=random, thomas=thomas)
             self.warehouse.add_retailer(r)
+
+    def run(self, FIFO=False, RAND=False):
+        t1 = time.time()
+        for i in range(self.length):
+            # self.warehouse.print_stocks(i)
+            self.warehouse.update_morning(i)
+            self.warehouse.update_self()
+            amounts = amounts_requested(self.warehouse, i)
+
+            if sum(amounts) > self.warehouse.stock:  # decision rule time
+                if FIFO:
+                    self.fifo(amounts)  # currently only works for two retailers!
+                elif RAND:
+                    self.random(amounts)
+                else:
+                    if self.warehouse.stock is not 0:
+                        model = mip.MIP()
+                        model.set_params(self.warehouse)
+                        amounts = model.optimal_quantities()
+                    else:
+                        amounts = [0 for i in range(self.num_retailers)]
+
+                    # print('SIMULATION! period:', i, 'stock_before:', self.warehouse.stock, 'quantities:', amounts)
+
+            self.warehouse.send_stocks(amounts)
+            self.warehouse.update_doc_inv()
+            self.warehouse.add_stock(amount_requested(self.warehouse))
+
+            # self.warehouse.print_stocks(i)
+            self.warehouse.update_evening()
+            # self.warehouse.print_stocks(i)
+            t2 = time.time()
+            t3 = time.time()
+            mytimes.add_interval(t2 - t1)
+            mytimes.add_interval(t3 - t2)
+            if i == 0:
+                mytimes.delete_first()
+            elif (i + 1) % 10 == 0:
+                mytimes.form_groups()
+            mytimes.next_group()
 
     def collect_statistics(self):
 
@@ -86,50 +145,15 @@ class Simulation:
         self.stats = None
         self.warehouse.reset()
 
-    def run(self, FIFO=False, RAND=False):
-        for i in range(self.length):
-            if i % 1000 == 0:
-                mytimes.next_interval()
-
-            # self.warehouse.print_stocks(i)
-            self.warehouse.update_morning(i)
-            self.warehouse.update_self()
-
-            amounts = self.amounts_requested(self.warehouse)
-
-            if sum(amounts) > self.warehouse.stock:  # decision rule time
-                if FIFO:
-                    self.fifo(amounts)  # currently only works for two retailers!
-                elif RAND:
-                    self.random(amounts)
-                else:
-                    if self.warehouse.stock is not 0:
-                        model = mip.MIP()
-                        model.set_params(self.warehouse)
-                        amounts = model.optimal_quantities()
-                    else:
-                        amounts = [0 for i in range(self.num_retailers)]
-
-                    # print('SIMULATION! period:', i, 'stock_before:', self.warehouse.stock, 'quantities:', amounts)
-
-            self.warehouse.send_stocks(amounts)
-            self.warehouse.update_doc_inv()
-            self.warehouse.add_stock(self.amount_requested(self.warehouse))
-
-            # self.warehouse.print_stocks(i)
-            self.warehouse.update_evening()
-            # self.warehouse.print_stocks(i)
-
     def amounts_pre(self, amounts):
         # reduce to first multiple of lot possible
         stock = self.warehouse.stock
         qs = [self.warehouse.retailers[i].Q for i in range(2)]
         for i in range(len(amounts)):
-            while amounts[i] > stock:
-                amounts[i] = amounts[i] - qs[i]
+            amounts[i] = amounts[i] - ceil((amounts[i] - stock) / qs[i]) * qs[i]
 
     def random(self,
-               amounts):  # todo: BAUSTELLE - sendet zu hohe mengen randomly chooses one of the retailers to receive tha product
+               amounts):  # todo: BAUSTELLE - sendet zu hohe mengen - zweck: randomly chooses one of the retailers to receive tha product
         for i in amounts:
             if i > self.warehouse.stock:
                 i = 0
@@ -156,25 +180,8 @@ class Simulation:
             i += 1
 
         ips.sort(key=takeSecond)
-
         for num, ip in ips:
             if amounts[num] > stock:
                 amounts[num] = 0
             else:
                 stock -= amounts[num]
-
-    def amount_requested(self, retailer):
-        R = retailer.R
-        Q = retailer.Q
-        ip = retailer.ip()
-        amount = 0
-        while R > ip:
-            amount += Q
-            ip += Q
-        return amount
-
-    def amounts_requested(self, warehouse):
-        a = []
-        for r in warehouse.retailers:
-            a.append(self.amount_requested(r))
-        return a

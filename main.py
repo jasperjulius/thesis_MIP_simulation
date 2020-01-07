@@ -10,17 +10,25 @@ def print_results_to_sheet(results, sheet, offset_row, start_column):
         for j in range(len(results[i])):
             sheet.cell(row=first_row + offset_row, column=start_column + 3 * j + i, value=round(results[i][j], 2))
 
+def print_times():
+    summ = 0
+    for num, i in enumerate(mytimes.exec_groups):
+        print(num, i)
+        for j in i:
+            summ += j
+    print("SUM: ", summ)
+    print("\n")
 
-# schwankungen behoben, jetzt ist FIFO besser
+
+# schwankungen behoben, jetzt ist FIFO besser als MIP...
 
 # todo: fixed order costs gibt's nicht, sondern order setup costs, die beim retailer anfallen fürs bestellen
 #  fragestellung: wie häufig wird er im zeitraum (von t = 0 bis t = 2*L) nochmal bestellen?
 
-# todo: avInv berechnung umstellen, einfach inventory im zeitpunkt t nehmen für gesamte periode
-#   dazu nimmt man pyhs_inv_t = phys_inv_t-1 - demand_t-1 + pending arrivals_t, und speichert die phys_invs ab
-#   das gleiche muss auch im modell wiedergespiegelt werden, und im MIP
-
+# todo: avInv umstellung im modell umsetzen
 # todo: backlog B, pending deliveries als Q, IP einmal reinnehmen, E()-funktion gerade biegen
+# pyhs_inv_t = phys_inv_t-1 - demand_t-1 + pending arrivals_t
+
 # todo: literatur für präsentation
 
 first_row = 4
@@ -56,9 +64,10 @@ for current in r:
     sheet["C%d" % (first_row + current[3])] = sim.warehouse.retailers[1].R
     sheet["D%d" % (first_row + current[3])] = str(sim.warehouse.retailers[0].seed) + "," + str(
         sim.warehouse.retailers[1].seed)
-    sim.run(FIFO=False)
-    print("mytimes.exec_times: ", mytimes.exec_times)
-    mytimes.next_group()
+    sim.run(FIFO=True)  #todo: change to False
+
+    print_times()
+
     after1 = time.time()
     results_mip = sim.collect_statistics()
     sim.reset()
@@ -66,7 +75,7 @@ for current in r:
     print_results_to_sheet(results_mip, sheet, current[3], 7)
 
     sim.run(FIFO=True)
-    print("mytimes.exec_times: ", mytimes.exec_times)
+    print_times()
 
     results_fifo = sim.collect_statistics()
     sim.reset()
@@ -80,3 +89,4 @@ for current in r:
     last_time = after2
 
 wb.save("generated_sheets/current.xlsx")
+

@@ -133,7 +133,9 @@ class MIP:
 
             # no up, avg: 0.00003
             self.shortage_objective(X_shortage, i)
+
             self.order_setup_objective(X_order_setup, i)
+
             # no up, avg: 0.000008
             X_fixed[i].Obj = self.p_c_fixed_order[i]
 
@@ -141,6 +143,7 @@ class MIP:
         self.model.addConstr(
             quicksum(X_holding[i] for i in X_holding) <= self.p_stock_warehouse)  # ct max capacity at warehouse
         self.model.addConstrs(X_holding[i] == X_shortage[i] for i in X_holding)  # ct(i) hilfsvariable constraint
+        self.model.addConstrs(X_holding[i] == X_order_setup[i] for i in X_holding)  # ct(i) hilfsvariable constraint
         self.model.addConstrs(
             X_holding[i] <= X_fixed[i] * self.p_stock_warehouse for i in X_holding)  # ct fixed order costs
 
