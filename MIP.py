@@ -1,6 +1,12 @@
 from gurobipy import *
 import mytimes
+import time
 
+t1 = 0
+t2 = 0
+t3 = 0
+t4 = 0
+t5 = 0
 
 class MIP:
 
@@ -47,10 +53,6 @@ class MIP:
 
             x.append(self.p_current_inv[i] + sum(self.p_pending_arrivals[i][:t + 1]) - self.p_av_demand[i] * t)
         return x
-
-
-
-
 
     def holding_objective(self, X_holding,
                           i):  # average inventory of retailer i in period t - only for t >= leadtime
@@ -114,10 +116,15 @@ class MIP:
         av_demand = self.p_av_demand[i]
         graph = []
 
-
-
     def optimal_quantities(self):
 
+        global t1
+        global t2
+        global t3
+        global t4
+        global t5
+
+        t1 = time.time()
         # all time results based on 400 periods, if not stated otherwise!
         # var block: no up, avg: 0.0004
         num_i = len(self.p_lead)
@@ -126,7 +133,7 @@ class MIP:
         X_order_setup = self.model.addVars(num_i, vtype=GRB.INTEGER, name='# sent out - order setup (helper var) ')
         X_fixed = self.model.addVars(num_i, vtype=GRB.BINARY,
                                      name='binary delivering to i')  # wird ersetzt durch neuen constraint?
-
+        t2 = time.time()
         for i in range(num_i):
             # trend up!!! avg first 40: 0.0005 , last 40: 0.008 (~factor 16)
             self.holding_objective(X_holding, i)
@@ -138,7 +145,7 @@ class MIP:
 
             # no up, avg: 0.000008
             X_fixed[i].Obj = self.p_c_fixed_order[i]
-
+        t3 = time.time()
         # ct block: no up, avg: 0.0002
         self.model.addConstr(
             quicksum(X_holding[i] for i in X_holding) <= self.p_stock_warehouse)  # ct max capacity at warehouse
@@ -146,18 +153,14 @@ class MIP:
         self.model.addConstrs(X_holding[i] == X_order_setup[i] for i in X_holding)  # ct(i) hilfsvariable constraint
         self.model.addConstrs(
             X_holding[i] <= X_fixed[i] * self.p_stock_warehouse for i in X_holding)  # ct fixed order costs
-
+        t4 = time.time()
         self.model.optimize()  # no up, avg: 0.0009
-
+        t5 = time.time()
         # model.printAttr('x')
         final = []
         for i in range(num_i):
             final.append(int(X_holding.get(i).X))
         return final
-
-
-
-
 
     def holding_objective_alt(self, X_holding,
                               i):  # average inventory of retailer i in period t - only for t >= leadtime

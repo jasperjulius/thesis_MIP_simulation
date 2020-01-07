@@ -7,8 +7,6 @@ import time
 from math import ceil
 
 
-
-
 def amount_requested(retailer):
     R = retailer.R
     Q = retailer.Q
@@ -50,13 +48,13 @@ class Simulation:
             self.warehouse.add_retailer(r)
 
     def run(self, FIFO=False, RAND=False):
-        t1 = time.time()
+
         for i in range(self.length):
             # self.warehouse.print_stocks(i)
             self.warehouse.update_morning(i)
             self.warehouse.update_self()
             amounts = amounts_requested(self.warehouse, i)
-
+            flag = False
             if sum(amounts) > self.warehouse.stock:  # decision rule time
                 if FIFO:
                     self.fifo(amounts)  # currently only works for two retailers!
@@ -64,6 +62,7 @@ class Simulation:
                     self.random(amounts)
                 else:
                     if self.warehouse.stock is not 0:
+                        flag = True
                         model = mip.MIP()
                         model.set_params(self.warehouse)
                         amounts = model.optimal_quantities()
@@ -79,13 +78,19 @@ class Simulation:
             # self.warehouse.print_stocks(i)
             self.warehouse.update_evening()
             # self.warehouse.print_stocks(i)
-            t2 = time.time()
-            t3 = time.time()
-            mytimes.add_interval(t2 - t1)
-            mytimes.add_interval(t3 - t2)
+            if flag:
+                mytimes.add_interval(mip.t2 - mip.t1)
+                mytimes.add_interval(mip.t3 - mip.t2)
+                mytimes.add_interval(mip.t4 - mip.t3)
+                mytimes.add_interval(mip.t5 - mip.t4)
+            else:
+                mytimes.add_interval(0)
+                mytimes.add_interval(0)
+                mytimes.add_interval(0)
+                mytimes.add_interval(0)
             if i == 0:
                 mytimes.delete_first()
-            elif (i + 1) % 10 == 0:
+            elif (i + 1) % 1000 == 0:
                 mytimes.form_groups()
             mytimes.next_group()
 
