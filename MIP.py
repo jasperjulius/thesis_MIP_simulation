@@ -1,12 +1,15 @@
 from gurobipy import *
 import mytimes
 import time
+from math import trunc
+import settings
 
 t1 = 0
 t2 = 0
 t3 = 0
 t4 = 0
 t5 = 0
+
 
 class MIP:
 
@@ -22,6 +25,7 @@ class MIP:
         self.p_current_inv = []
         self.p_pending_arrivals = []
         self.ips = []
+        self.r = []
 
     def set_params(self, warehouse):
         self.__init__()
@@ -42,6 +46,7 @@ class MIP:
         self.p_c_fixed_order.append(retailer.c_fixed_order)
         self.p_pending_arrivals.append(retailer.pending_arrivals)
         self.ips.append(retailer.ip())
+        self.r.append(retailer.R)
 
     def expected_invs(self, i, lead=True):
         x = []
@@ -109,12 +114,43 @@ class MIP:
 
     # erster wert jeweils für t = 0, also "jetzt"; aktuell wird so gerechnet, als kämen deliveries first thing in the morning an, und sind somit im täglichen inventory zur berechnung der holding/shortage costs mit drin
 
-    def order_setup_objective(self, X_order_setup, i):
+    def order_setup_objective(self, X_order_setup,
+                              i):  # geht davon aus, dass av_demand ankommt in future periods, könnte auch auf erwartungswert umgestellt werden (ein x resultiert in einer gewissen wahrscheinlichkeit, dass bei gegebener wahrscheinlichkeitsverteilung nächste/übernächste/.. periode wieder bestellt wird; ziemlich kompliziert wahrscheinlich)
 
-        x = self.expected_invs(i, lead=False)
         ip = self.ips[i]
+        r = self.r[i]
+        base_x = r - ip
         av_demand = self.p_av_demand[i]
+        cost = self.p_c_fixed_order[i]
         graph = []
+        shift_forward = 0
+        if ip > r:
+            shift_forward = trunc((ip - r) / av_demand)
+        length = max(1, 2 * self.p_lead[i]) - shift_forward
+        if length > 0:
+            for j in range(length):  # could be limited by warehouse stock, to reduce num points created
+
+                x = base_x + (j + shift_forward) * av_demand
+                x_follow = x + 1
+                y = max(1, trunc(length / max(1, j))) * cost
+                y_follow = max(1, trunc(length / max(1, j + 1))) * cost
+
+                if j == 0:
+                    graph.append((x - 1, y))
+                graph.append((x, y))
+                graph.append((x_follow, y_follow))
+                if j == max(range(length)):
+                    graph.append((x_follow + 1, y_follow))
+        else:
+            graph.append((0, cost))  # change to (0, 0) for integrating other constraint here
+            graph.append((1, cost))
+            graph.append((2, cost))
+
+        list_x, list_y = map(list, zip(*graph))
+        self.model.setPWLObj(X_order_setup[i], list_x, list_y)
+
+        pass
+        # y.append(freq*self.p_c_fixed_order[i])
 
     def optimal_quantities(self):
 
@@ -125,28 +161,26 @@ class MIP:
         global t5
 
         t1 = time.time()
-        # all time results based on 400 periods, if not stated otherwise!
-        # var block: no up, avg: 0.0004
+
         num_i = len(self.p_lead)
         X_holding = self.model.addVars(num_i, vtype=GRB.INTEGER, name='# sent out - holding')
         X_shortage = self.model.addVars(num_i, vtype=GRB.INTEGER, name='# sent out - shortage (helper var) ')
-        X_order_setup = self.model.addVars(num_i, vtype=GRB.INTEGER, name='# sent out - order setup (helper var) ')
+        if settings.order_setup:
+            X_order_setup = self.model.addVars(num_i, vtype=GRB.INTEGER, name='# sent out - order setup (helper var) ')
         X_fixed = self.model.addVars(num_i, vtype=GRB.BINARY,
                                      name='binary delivering to i')  # wird ersetzt durch neuen constraint?
         t2 = time.time()
         for i in range(num_i):
-            # trend up!!! avg first 40: 0.0005 , last 40: 0.008 (~factor 16)
             self.holding_objective(X_holding, i)
 
-            # no up, avg: 0.00003
             self.shortage_objective(X_shortage, i)
+            if settings.order_setup:
+                self.order_setup_objective(X_order_setup, i)
 
-            self.order_setup_objective(X_order_setup, i)
-
-            # no up, avg: 0.000008
             X_fixed[i].Obj = self.p_c_fixed_order[i]
+
         t3 = time.time()
-        # ct block: no up, avg: 0.0002
+
         self.model.addConstr(
             quicksum(X_holding[i] for i in X_holding) <= self.p_stock_warehouse)  # ct max capacity at warehouse
         self.model.addConstrs(X_holding[i] == X_shortage[i] for i in X_holding)  # ct(i) hilfsvariable constraint
@@ -154,9 +188,8 @@ class MIP:
         self.model.addConstrs(
             X_holding[i] <= X_fixed[i] * self.p_stock_warehouse for i in X_holding)  # ct fixed order costs
         t4 = time.time()
-        self.model.optimize()  # no up, avg: 0.0009
+        self.model.optimize()
         t5 = time.time()
-        # model.printAttr('x')
         final = []
         for i in range(num_i):
             final.append(int(X_holding.get(i).X))
