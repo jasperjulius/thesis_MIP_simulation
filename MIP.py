@@ -184,7 +184,8 @@ class MIP:
         self.model.addConstr(
             quicksum(X_holding[i] for i in X_holding) <= self.p_stock_warehouse)  # ct max capacity at warehouse
         self.model.addConstrs(X_holding[i] == X_shortage[i] for i in X_holding)  # ct(i) hilfsvariable constraint
-        self.model.addConstrs(X_holding[i] == X_order_setup[i] for i in X_holding)  # ct(i) hilfsvariable constraint
+        if settings.order_setup:
+            self.model.addConstrs(X_holding[i] == X_order_setup[i] for i in X_holding)  # ct(i) hilfsvariable constraint
         self.model.addConstrs(
             X_holding[i] <= X_fixed[i] * self.p_stock_warehouse for i in X_holding)  # ct fixed order costs
         t4 = time.time()

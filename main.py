@@ -35,7 +35,6 @@ def print_times():
 #  fragestellung: wie häufig wird er im zeitraum (von t = 0 bis t = 2*L) nochmal bestellen?
 # todo: rta - in MIP, solving the model is currently taking up 75% of computation time - improvement possible?
 
-
 # todo: avInv umstellung im modell umsetzen
 # todo: backlog B, pending deliveries als Q, IP einmal reinnehmen, E()-funktion gerade biegen
 # pyhs_inv_t = phys_inv_t-1 - demand_t-1 + pending arrivals_t
@@ -53,11 +52,11 @@ sheet = wb[wb.sheetnames[0]]
 
 
 # robj = rgen.R(25, 25, 25, 50, 50, 50, 1, 1, 1)
-robj = rgen.R(20, 0, 0, 50, 0, 0, 10, 1, 1, repeat=10)
+robj = rgen.R(20, 0, 0, 50, 0, 0, 10, 1, 1, repeat=5)
 # r = robj.r()
 r = robj.r_same()
 
-length = 30000
+length = 10000
 sheet["AH4"] = length
 for current in r:
     sim = simulation.Simulation(length=length, stock=10, stochastic=True, thomas=False)
