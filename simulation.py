@@ -36,7 +36,8 @@ class Simulation:
                 seed = rand.randint(0, 10000, 1)[0]  # todo: wieder seedfrei am ende, nur fürs testen
                 rand.seed(seed)
                 if not thomas:  # todo: if not thomas
-                    random = rand.negative_binomial(4, 0.4, length)
+                    # random = rand.negative_binomial(4, 0.4, length)
+                    random = rand.negative_binomial(6, 0.6, length)
                 else:
                     random = rand.poisson(2 * i + 2, length)  # todo: find out parameter
                     # todo: alternatively compound poisson
