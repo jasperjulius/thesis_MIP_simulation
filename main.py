@@ -31,30 +31,39 @@ def print_times():
 
 # schwankungen behoben, jetzt ist FIFO besser als MIP...
 
-# todo: fixed order costs gibt's nicht, sondern order setup costs, die beim retailer anfallen fürs bestellen
-#  fragestellung: wie häufig wird er im zeitraum (von t = 0 bis t = 2*L) nochmal bestellen?
-# todo: excel - same same comparison fortführen - warum ist die neue schlechter als die alte?
-# todo: rta - in MIP, solving the model is currently taking up 75% of computation time - improvement possible?
-
-#  pending deliveries als Q? habe es erstmal O genannt, wegen Q aus R, Q
-# pyhs_inv_t = phys_inv_t-1 - demand_t-1 + pending arrivals_t
 # todo: literatur für präsentation
 
-# josef: fifo - neue Implementierung mit "not full order has to be delivered, but multiple of q" - viable? wegen der alten Implementierung gab es die Schwankungen, aber jetzt ist FIFO besser...
-# demand with lower fluctuation -> MIP wieder besser!
-# josef: lead time = 0 auch als case? retailer mit unterschiedichen lead times auch als case?
+# fixed order costs gibt's nicht, sondern order setup costs, die beim retailer anfallen fürs bestellen
+#  fragestellung: wie häufig wird er im zeitraum (von t = 0 bis t = 2*L) nochmal bestellen?
+# todo: excel - same same comparison fortführen - warum ist die neue schlechter als die alte?
+
+# todo: rta - in MIP, solving the model is currently taking up 75% of computation time - improvement possible?
+
+# pyhs_inv_t = phys_inv_t-1 - demand_t-1 + pending arrivals_t
+
+
+# josef: fifo - neue Implementierung mit "not full order has to be delivered, but multiple of q" - viable? yes!
+# backorders tracken in neuer var D, wird priorisiert in FIFO
+#    demand with lower fluctuation -> MIP wieder besser!
+# b zu h viel extremer, var in variation coeficient
+# warm-up (zukunft)
+# josef: lead time = 0 auch als case? erstmal nicht wichtig, L=2 ist okay! Q eoq auch gut
+#    retailer mit unterschiedichen lead times auch als case? wenn ja, wie wird dann vorausgerechnet? kriegt jeder retailer sein eigenes zeitfenster?
+# josef:  pending deliveries als Q? habe es erstmal O genannt, wegen Q aus R, Q: okay
+# einleitung, literatur,
+# rückwärtssuche: wer zitiert zB. gallego?, axsäter
 
 first_row = 4
 wb = openpyxl.load_workbook(
-    '/Users/jasperinho/PycharmProjects/thesis_MIP/generated_sheets/templates/template long.xlsx',
+    '/Users/jasperinho/PycharmProjects/thesis_MIP/generated_sheets/templates/template short.xlsx',
     read_only=False)
 sheet = wb[wb.sheetnames[0]]
 
 
-robj = rgen.R(20, 15, 15, 30, 25, 25, 1, 1, 1)
-# robj = rgen.R(20, 0, 0, 50, 0, 0, 10, 1, 1, repeat=5)
-r = robj.r()
-# r = robj.r_same()
+# robj = rgen.R(20, 15, 15, 30, 25, 25, 1, 1, 1)
+robj = rgen.R(20, 0, 0, 50, 0, 0, 10, 1, 1, repeat=5)
+# r = robj.r()
+r = robj.r_same()
 
 length = 5000
 sheet["AH4"] = length
@@ -88,7 +97,7 @@ for current in r:
     print_results_to_sheet(results_mip, sheet, current[3], 7)
     pre2 = time.time()
     settings.order_setup = False
-    sim.run(FIFO=True)  #todo: testing - change back to True
+    sim.run(FIFO=True)
     after2 = time.time()
 
     print_times()

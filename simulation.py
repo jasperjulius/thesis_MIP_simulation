@@ -54,25 +54,32 @@ class Simulation:
             # self.warehouse.print_stocks(i)
             self.warehouse.update_morning(i)
             self.warehouse.update_self()
-            amounts = amounts_requested(self.warehouse, i)
+
+            initial_amounts = amounts_requested(self.warehouse, i)
+            ds = self.warehouse.get_ds()
+            # ds = [0, 0] todo: for testing with old rule
+            amounts_sent = [a + d for a, d in zip(initial_amounts, ds)]
+            amounts_request = amounts_sent.copy()
+
             flag = False
-            if sum(amounts) > self.warehouse.stock:  # decision rule time
-                if FIFO:
-                    self.fifo(amounts)  # currently only works for two retailers!
+            if sum(amounts_sent) > self.warehouse.stock:  # decision rule time
+                if FIFO:  # todo: with D included in amount requested, it is not guaranteed that amount_sent is a multiple of Q
+                    self.fifo(amounts_sent)  # currently only works for two retailers!
                 elif RAND:
-                    self.random(amounts)
+                    self.random(amounts_sent)
                 else:
                     if self.warehouse.stock is not 0:
                         flag = True
                         model = mip.MIP()
                         model.set_params(self.warehouse)
-                        amounts = model.optimal_quantities()
+                        amounts_sent = model.optimal_quantities()
                     else:
-                        amounts = [0 for i in range(self.num_retailers)]
+                        amounts_sent = [0 for i in range(self.num_retailers)]
 
                     # print('SIMULATION! period:', i, 'stock_before:', self.warehouse.stock, 'quantities:', amounts)
 
-            self.warehouse.send_stocks(amounts)
+            self.warehouse.send_stocks(amounts_sent)
+            self.warehouse.update_ds(amounts_request, amounts_sent)
             self.warehouse.update_doc_inv()
             self.warehouse.add_stock(amount_requested(self.warehouse))
 
@@ -151,9 +158,8 @@ class Simulation:
         self.stats = None
         self.warehouse.reset()
 
-    def amounts_pre(self, amounts):
+    def amounts_pre(self, stock, amounts):
         # reduce to first multiple of lot possible
-        stock = self.warehouse.stock
         qs = [self.warehouse.retailers[i].Q for i in range(2)]
         for i in range(len(amounts)):
             amounts[i] = amounts[i] - ceil((amounts[i] - stock) / qs[i]) * qs[i]
@@ -172,7 +178,7 @@ class Simulation:
 
     def fifo(self, amounts):
 
-        self.amounts_pre(amounts)
+        self.amounts_pre(self.warehouse.stock, amounts)
 
         def takeSecond(elem):
             return elem[1]
@@ -191,3 +197,21 @@ class Simulation:
                 amounts[num] = 0
             else:
                 stock -= amounts[num]
+
+    def new_fifo(self, _ds, _amounts):
+
+        stock = self.warehouse.stock
+        send = [0, 0]
+        ds = _ds.copy()
+        amounts = _amounts.copy()
+
+        self.amounts_pre(stock, ds)  # reduce each d to largest multiple of lot size q that is possible with current warehouse stock
+
+        # assigning to the retailers, update stock
+        # ...
+
+        self.amounts_pre(stock, amounts)
+        # assigning to the retailers, update stock
+        # ...
+
+        return send

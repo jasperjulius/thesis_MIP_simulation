@@ -10,7 +10,7 @@ class Retailer:
             c_shortage = 4
             av_demand = 2 + 2 * number
             current_inv = av_demand * lead
-
+        self.D = 0
         self.seed = seed
         self.thomas = thomas
         self.number = number
@@ -43,10 +43,10 @@ class Retailer:
 
         self.pending_arrivals = self.construct_pending()
         self.doc_arrivals = self.construct_pending()
+        self.D = 0
 
     def update_morning(self, period):
         self.period = period
-
         self.doc_inv.append(self.current_inv + self.pending_arrivals[0])
         self.current_inv += self.pending_arrivals[0]
         self.doc_arrivals[period] = self.pending_arrivals[0]
@@ -63,6 +63,7 @@ class Retailer:
         pass
 
     def add_stock(self, amount):
+
         self.pending_arrivals[self.lead] = amount
 
     def construct_pending(self):
@@ -75,4 +76,4 @@ class Retailer:
         ip = self.current_inv
         for amount in self.pending_arrivals:
             ip += amount
-        return ip
+        return ip + self.D

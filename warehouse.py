@@ -3,7 +3,8 @@ from math import ceil
 
 class Warehouse:
 
-    def __init__(self, stock=100, R=60, lead=2, c_holding=0.1, c_fixed_order=1.5, thomas=False):  #todo: params von thomas, stehen in retailer
+    def __init__(self, stock=100, R=60, lead=2, c_holding=0.1, c_fixed_order=1.5,
+                 thomas=False):  # todo: params von thomas, stehen in retailer
 
         if thomas:
             c_fixed_order = 20
@@ -55,10 +56,18 @@ class Warehouse:
         for number, a in enumerate(amounts):
             self.send_stock(a, number)
 
+    def update_ds(self, amounts_requested, amounts_sent):
+        diff = [max(0, r - s) for r, s in zip(amounts_requested, amounts_sent)]
+        for r, d in zip(self.retailers, diff):
+            r.D = d
+
     def print_stocks(self, period):
         print("period: ", period, "warehouse - stock: ", self.stock)
         for r in self.retailers:
             print(r.number, ", stock: ", r.current_inv, ", ip:", r.ip(), ", pending_arrivals: ", r.pending_arrivals)
+
+    def get_ds(self):
+        return [r.D for r in self.retailers]
 
     def update_morning(self, period):
         self.doc_arrivals.append(0)
