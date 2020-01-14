@@ -23,7 +23,7 @@ class Warehouse:
         self.lead = lead
         self.retailers = []
         self.pending_arrivals = [0, 0, 0, 0, 0, 0]
-        self.ds_timebound = []
+        self.ds = []
 
     def reset(self):
         for r in self.retailers:
@@ -32,6 +32,7 @@ class Warehouse:
         self.pending_arrivals = [0, 0, 0, 0, 0, 0]
         self.doc_arrivals = [0, 0, 0, 0, 0, 0]
         self.doc_inv = []
+        self.ds = []
 
     # method for adding retailers
     def add_retailer(self, retailer):
@@ -57,26 +58,30 @@ class Warehouse:
         for number, a in enumerate(amounts):
             self.send_stock(a, number)
 
-    def update_ds(self, amounts_requested, amounts_sent):
-        diff = [max(0, r - s) for r, s in zip(amounts_requested, amounts_sent)]
-        for r, d in zip(self.retailers, diff):
+    def update_ds(self):
+        ds = self.sum_d_each_retailer()
+        for r, d in zip(self.retailers, ds):
             r.D = d
+
 
     def print_stocks(self, period):
         print("period: ", period, "warehouse - stock: ", self.stock)
         for r in self.retailers:
             print(r.number, ", stock: ", r.current_inv, ", ip:", r.ip(), ", pending_arrivals: ", r.pending_arrivals)
 
-    def get_Ds(self):
-        return [r.D for r in self.retailers]
-
-    def get_ds_timebound(self):  # todo
-        return [[0, 10], [1, 30], [0, 20]]
+    def get_ds(self):
+        return self.ds
 
         # return self.ds_timebound
 
-    def sum_ds(self):  # todo
-        return 10
+    def sum_d_each_retailer(self):
+        result = [0,0]
+        for d in self.ds:
+            result[d[0]] += d[1]
+        return result
+
+    def sum_ds(self):
+        return sum([d[1] for d in self.ds])
 
         # sum over ds_timebound; dependent on structure of ds_timebound
 

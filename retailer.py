@@ -2,7 +2,7 @@ from math import ceil
 
 class Retailer:
 
-    def __init__(self, number, periods, seed=None, lead=2, av_demand=10, c_holding=0.2, c_shortage=0.4, current_inv=30,
+    def __init__(self, number, periods, seed=None, lead=2, av_demand=10, c_holding=0.1, c_shortage=4.9, current_inv=30,
                  c_fixed_order=1.0, R=40, demands=None, thomas=False):
         if thomas:
             c_fixed_order = 5
@@ -10,8 +10,6 @@ class Retailer:
             c_shortage = 4
             av_demand = 2 + 2 * number
             current_inv = av_demand * lead
-        self.D = 0
-        self.ds_timebound = []
         self.seed = seed
         self.thomas = thomas
         self.number = number
@@ -26,6 +24,8 @@ class Retailer:
         self.doc_arrivals = self.construct_pending()
         self.R = R  #
         self.Q = ceil((2 * av_demand * c_fixed_order / c_holding) ** 0.5)  #
+        self.doc_setup_counter = 0
+        self.D = 0
 
         if thomas:
             self.Q = 4 + 4 * number
@@ -44,8 +44,8 @@ class Retailer:
 
         self.pending_arrivals = self.construct_pending()
         self.doc_arrivals = self.construct_pending()
+        self.doc_setup_counter = 0
         self.D = 0
-        self.ds_timebound = []
 
     def update_morning(self, period):
         self.period = period

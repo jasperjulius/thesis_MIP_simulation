@@ -18,7 +18,11 @@ def amount_requested(retailer):
 def amounts_requested(warehouse, i):
     a = []
     for r in warehouse.retailers:
-        a.append(amount_requested(r))
+        amount = amount_requested(r)
+        if amount >0:
+            r.doc_setup_counter += 1    # todo: implement cost calculation in collect_statistics using counter
+        a.append(amount)
+
     return a
 
 
@@ -37,8 +41,11 @@ class Simulation:
                 seed = rand.randint(0, 10000, 1)[0]  # todo: wieder seedfrei am ende, nur fürs testen
                 # rand.seed(seed)
                 if not thomas:  # todo: if not thomas
-                    # random = rand.negative_binomial(4, 0.4, length)
-                    random = [i for i in rand.negative_binomial(7, 0.7, length)]
+                    distr_name = "neg bin"
+                    n = 7
+                    p = 0.7
+                    self.distribution = (distr_name, n, p)
+                    random = [i for i in rand.negative_binomial(n, p, length)]
                     # random = [max(0, int(round(i))) for i in rand.normal(10, 1, length)]    #todo: eig quatsch; ändern
                     avg = sum(random) / len(random)
                     pass
@@ -60,7 +67,7 @@ class Simulation:
             self.warehouse.update_self()
 
             initial_amounts = amounts_requested(self.warehouse, i)
-            ds = self.warehouse.get_ds_timebound()
+            ds = self.warehouse.get_ds()
             if settings.no_d:
                 ds = []
             total_amount = sum(initial_amounts) + self.warehouse.sum_ds()
@@ -69,6 +76,7 @@ class Simulation:
             if total_amount > self.warehouse.stock or (FIFO and self.warehouse.sum_ds() > 0):  # decision rule time
                 if FIFO:
                     amounts_sent = self.fifo(ds, initial_amounts)  # currently only works for two retailers!
+                    pass
                 else:
                     if self.warehouse.stock is not 0:
                         flag = True
@@ -81,6 +89,7 @@ class Simulation:
                     # print('SIMULATION! period:', i, 'stock_before:', self.warehouse.stock, 'quantities:', amounts)
 
             self.warehouse.send_stocks(amounts_sent)
+            self.warehouse.update_ds()
             self.warehouse.update_doc_inv()
             self.warehouse.add_stock(amount_requested(self.warehouse))
 
@@ -193,10 +202,8 @@ class Simulation:
 
         def takeSecond(elem):
             return elem[1]
-
         qs = [self.warehouse.retailers[i].Q for i in range(2)]
         stock = self.warehouse.stock
-        stock = 80
         send = [0, 0]
 
         if stock == 0:  # todo: verbauen mit outer check for MIP
@@ -206,7 +213,7 @@ class Simulation:
 
         if not settings.random:
             send, stock = self.satisfy_ds(stock, ds)
-            self.amounts_pre(stock, amounts)  # todo: tested, test on from here; implement methods in warehouse
+            self.amounts_pre(stock, amounts)
             if sum(amounts) == 0:
                 return send
 
@@ -215,7 +222,6 @@ class Simulation:
             for r in self.warehouse.retailers:
                 ips.append((j, r.ip()))
                 j += 1
-
             ips.sort(key=takeSecond)
             for retailer, ip in ips:
                 if amounts[retailer] <= stock:
@@ -223,10 +229,8 @@ class Simulation:
                     stock -= amounts[retailer]
                 else:
                     max_amount = self.max_amount_possible(amounts[retailer], stock, qs[retailer])
-                    # determine amount sent, amount backlogged
-                    send[retailer] += max_amount  # max_possible(amounts[num])  # todo: check whether new tuples are correctly added to ds
-                    ds.append([0, amounts[retailer] - max_amount])
-                    # add new backlog to ds
+                    send[retailer] += max_amount
+                    ds.append([retailer, amounts[retailer] - max_amount])
 
         else:
             self.resolve_conflict_random(stock, ds)
@@ -237,8 +241,7 @@ class Simulation:
             for i, amount in enumerate(amounts):
                 send[i] += amount
                 stock -= amount
-            # assigning to the retailers, update stock
-            # ...
+
 
         return send
 

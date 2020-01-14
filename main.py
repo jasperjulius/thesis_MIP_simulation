@@ -39,7 +39,8 @@ def print_times():
 
 # todo: rta - in MIP, solving the model is currently taking up 75% of computation time - improvement possible?
 
-#todo: wieso hat retailer zwei immer so hohe shortage costs? wieso nicht, wenn no_d?
+#todo: retailer 2 hat in MIP sehr hohe shortage costs, wird der gesendete amount eventuell nur hinsichtlich holding costs optimisiert? oder wird retailer 1 anderweitig bevorzugt? was da los?
+
 #todo: große frage: sind die schwankungen vertretbar? andere wahrscheinlichkeitsvertilung ausprobieren?
 
 # pyhs_inv_t = phys_inv_t-1 - demand_t-1 + pending arrivals_t
@@ -64,7 +65,7 @@ sheet = wb[wb.sheetnames[0]]
 
 
 # robj = rgen.R(20, 15, 15, 30, 25, 25, 1, 1, 1)
-robj = rgen.R(15, 0, 0, 15, 0, 0, 5, 1, 1, repeat=5)
+robj = rgen.R(10, 0, 0, 20, 0, 0, 2, 1, 1, repeat=1)
 # r = robj.r()
 r = robj.r_same()
 
@@ -112,4 +113,7 @@ for current in r:
     sheet["E%d" % (first_row + current[3])] = after1 - pre1
     sheet["F%d" % (first_row + current[3])] = after2 - pre2
 
+sheet["AH8"] = sim.distribution[0]
+sheet["AI8"] = sim.distribution[1]
+sheet["AJ8"] = float(sim.distribution[2])
 wb.save("generated_sheets/current.xlsx")
