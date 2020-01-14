@@ -23,6 +23,7 @@ class Warehouse:
         self.lead = lead
         self.retailers = []
         self.pending_arrivals = [0, 0, 0, 0, 0, 0]
+        self.ds_timebound = []
 
     def reset(self):
         for r in self.retailers:
@@ -66,8 +67,18 @@ class Warehouse:
         for r in self.retailers:
             print(r.number, ", stock: ", r.current_inv, ", ip:", r.ip(), ", pending_arrivals: ", r.pending_arrivals)
 
-    def get_ds(self):
+    def get_Ds(self):
         return [r.D for r in self.retailers]
+
+    def get_ds_timebound(self):  # todo
+        return [[0, 10], [1, 30], [0, 20]]
+
+        # return self.ds_timebound
+
+    def sum_ds(self):  # todo
+        return 10
+
+        # sum over ds_timebound; dependent on structure of ds_timebound
 
     def update_morning(self, period):
         self.doc_arrivals.append(0)
@@ -97,3 +108,6 @@ class Warehouse:
 
     def add_stock(self, amount):
         self.pending_arrivals[self.lead] = amount
+
+    def get_min_q(self):
+        return min([r.Q for r in self.retailers])

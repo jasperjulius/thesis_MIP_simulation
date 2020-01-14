@@ -39,6 +39,9 @@ def print_times():
 
 # todo: rta - in MIP, solving the model is currently taking up 75% of computation time - improvement possible?
 
+#todo: wieso hat retailer zwei immer so hohe shortage costs? wieso nicht, wenn no_d?
+#todo: große frage: sind die schwankungen vertretbar? andere wahrscheinlichkeitsvertilung ausprobieren?
+
 # pyhs_inv_t = phys_inv_t-1 - demand_t-1 + pending arrivals_t
 
 
@@ -61,19 +64,16 @@ sheet = wb[wb.sheetnames[0]]
 
 
 # robj = rgen.R(20, 15, 15, 30, 25, 25, 1, 1, 1)
-robj = rgen.R(20, 0, 0, 50, 0, 0, 10, 1, 1, repeat=5)
+robj = rgen.R(15, 0, 0, 15, 0, 0, 5, 1, 1, repeat=5)
 # r = robj.r()
 r = robj.r_same()
 
-length = 5000
+length = 1000
 sheet["AH4"] = length
 for current in r:
     sim = simulation.Simulation(length=length, stock=10, stochastic=True, thomas=False)
     print(current)
     print(round(((current[3] / robj.duration) * 100), 2), "%")
-    # r1 = sim.warehouse.retailers[0]
-    # r1.c_holding = 0.3
-    # r1.c_shortage = 4
 
     sim.warehouse.R = current[0]
     sim.warehouse.retailers[0].R = current[1]
@@ -85,29 +85,30 @@ for current in r:
     sheet["D%d" % (first_row + current[3])] = str(sim.warehouse.retailers[0].seed) + "," + str(
         sim.warehouse.retailers[1].seed)
     pre1 = time.time()
+
+    settings.random = False
     settings.order_setup = False
+    settings.no_d = False
     sim.run(FIFO=False)
+
     after1 = time.time()
-
     print_times()
-
     results_mip = sim.collect_statistics()
     sim.reset()
-
     print_results_to_sheet(results_mip, sheet, current[3], 7)
     pre2 = time.time()
+
+
+    settings.random = False
     settings.order_setup = False
+    settings.no_d = False
     sim.run(FIFO=True)
+
     after2 = time.time()
-
     print_times()
-
     results_fifo = sim.collect_statistics()
     sim.reset()
-
     print_results_to_sheet(results_fifo, sheet, current[3], 18)
-    # print(results_mip, results_fifo)
-
     sheet["E%d" % (first_row + current[3])] = after1 - pre1
     sheet["F%d" % (first_row + current[3])] = after2 - pre2
 

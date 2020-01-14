@@ -4,6 +4,7 @@ import warehouse as wh
 import numpy.random as rand
 import mytimes
 import time
+import settings
 from math import ceil
 
 
@@ -30,20 +31,23 @@ class Simulation:
         self.num_retailers = num_retailers
 
         for i in range(num_retailers):
-
+            seed = -1
             if stochastic:
 
                 seed = rand.randint(0, 10000, 1)[0]  # todo: wieder seedfrei am ende, nur fürs testen
-                rand.seed(seed)
+                # rand.seed(seed)
                 if not thomas:  # todo: if not thomas
                     # random = rand.negative_binomial(4, 0.4, length)
-                    random = rand.negative_binomial(6, 0.6, length)
+                    random = [i for i in rand.negative_binomial(7, 0.7, length)]
+                    # random = [max(0, int(round(i))) for i in rand.normal(10, 1, length)]    #todo: eig quatsch; ändern
+                    avg = sum(random) / len(random)
+                    pass
                 else:
                     random = rand.poisson(2 * i + 2, length)  # todo: find out parameter
                     # todo: alternatively compound poisson
 
             else:
-                random = None
+                random = rand.negative_binomial(7, 0.7, length)
 
             r = rt.Retailer(i, self.length, seed=seed, demands=random, thomas=thomas)
             self.warehouse.add_retailer(r)
@@ -56,17 +60,15 @@ class Simulation:
             self.warehouse.update_self()
 
             initial_amounts = amounts_requested(self.warehouse, i)
-            ds = self.warehouse.get_ds()
-            # ds = [0, 0] todo: for testing with old rule
-            amounts_sent = [a + d for a, d in zip(initial_amounts, ds)]
-            amounts_request = amounts_sent.copy()
-
+            ds = self.warehouse.get_ds_timebound()
+            if settings.no_d:
+                ds = []
+            total_amount = sum(initial_amounts) + self.warehouse.sum_ds()
+            amounts_sent = initial_amounts.copy()
             flag = False
-            if sum(amounts_sent) > self.warehouse.stock:  # decision rule time
-                if FIFO:  # todo: with D included in amount requested, it is not guaranteed that amount_sent is a multiple of Q
-                    self.fifo(amounts_sent)  # currently only works for two retailers!
-                elif RAND:
-                    self.random(amounts_sent)
+            if total_amount > self.warehouse.stock or (FIFO and self.warehouse.sum_ds() > 0):  # decision rule time
+                if FIFO:
+                    amounts_sent = self.fifo(ds, initial_amounts)  # currently only works for two retailers!
                 else:
                     if self.warehouse.stock is not 0:
                         flag = True
@@ -79,7 +81,6 @@ class Simulation:
                     # print('SIMULATION! period:', i, 'stock_before:', self.warehouse.stock, 'quantities:', amounts)
 
             self.warehouse.send_stocks(amounts_sent)
-            self.warehouse.update_ds(amounts_request, amounts_sent)
             self.warehouse.update_doc_inv()
             self.warehouse.add_stock(amount_requested(self.warehouse))
 
@@ -158,60 +159,122 @@ class Simulation:
         self.stats = None
         self.warehouse.reset()
 
-    def amounts_pre(self, stock, amounts):
-        # reduce to first multiple of lot possible
+    def amounts_pre(self, stock, amounts):  # reduce each amount to first multiple of lot possible
         qs = [self.warehouse.retailers[i].Q for i in range(2)]
         for i in range(len(amounts)):
-            amounts[i] = amounts[i] - ceil((amounts[i] - stock) / qs[i]) * qs[i]
+            amounts[i] = amounts[i] - max(0, ceil((amounts[i] - stock) / qs[i]) * qs[i])
 
-    def random(self,
-               amounts):  # todo: BAUSTELLE - sendet zu hohe mengen - zweck: randomly chooses one of the retailers to receive tha product
-        for i in amounts:
-            if i > self.warehouse.stock:
-                i = 0
+    def amounts_sum_lower_stock(self, stock,
+                                amounts):  # reduce each amount such that the total SUM is lower than stock and each multiple of lot
+        qs = [self.warehouse.retailers[i].Q for i in range(2)]
+        sent_so_far = 0
+        for i in range(len(amounts)):
+            amounts[i] = amounts[i] - ceil(max(0, amounts[i] - (stock - sent_so_far)) / qs[i]) * qs[i]
+            sent_so_far += amounts[i]
 
-        number_retailers = len(self.warehouse.retailers)
-        chosen = rand.randint(0, number_retailers - 1)
-        for i in range(number_retailers):
-            if not i == chosen:
-                amounts[i] = 0
+    def resolve_conflict_random(self, stock, amounts):
+        self.amounts_pre(stock, amounts)
+        if sum(amounts) > stock:
+            if amounts[0] <= stock and amounts[1] <= stock:
+                amounts[rand.randint(0, 1)] = 0
+            elif amounts[0] > stock and amounts[1] > stock:
+                amounts[0] = 0
+                amounts[1] = 0
+            elif amounts[0] > stock:
+                amounts[0] = 0
+            elif amounts[1] > stock:
+                amounts[1] = 0
 
-    def fifo(self, amounts):
+    @staticmethod
+    def max_amount_possible(amount, stock, q):
+        return amount - max(0, ceil((amount - stock) / q) * q)
 
-        self.amounts_pre(self.warehouse.stock, amounts)
+    def fifo(self, _ds, _amounts):
 
         def takeSecond(elem):
             return elem[1]
 
-        ips = []
-        i = 0
+        qs = [self.warehouse.retailers[i].Q for i in range(2)]
         stock = self.warehouse.stock
-
-        for r in self.warehouse.retailers:
-            ips.append((i, r.ip()))
-            i += 1
-
-        ips.sort(key=takeSecond)
-        for num, ip in ips:
-            if amounts[num] > stock:
-                amounts[num] = 0
-            else:
-                stock -= amounts[num]
-
-    def new_fifo(self, _ds, _amounts):
-
-        stock = self.warehouse.stock
+        stock = 80
         send = [0, 0]
-        ds = _ds.copy()
+
+        if stock == 0:  # todo: verbauen mit outer check for MIP
+            return send
+        ds = _ds
         amounts = _amounts.copy()
 
-        self.amounts_pre(stock, ds)  # reduce each d to largest multiple of lot size q that is possible with current warehouse stock
+        if not settings.random:
+            send, stock = self.satisfy_ds(stock, ds)
+            self.amounts_pre(stock, amounts)  # todo: tested, test on from here; implement methods in warehouse
+            if sum(amounts) == 0:
+                return send
 
-        # assigning to the retailers, update stock
-        # ...
+            ips = []
+            j = 0
+            for r in self.warehouse.retailers:
+                ips.append((j, r.ip()))
+                j += 1
 
-        self.amounts_pre(stock, amounts)
-        # assigning to the retailers, update stock
-        # ...
+            ips.sort(key=takeSecond)
+            for retailer, ip in ips:
+                if amounts[retailer] <= stock:
+                    send[retailer] += amounts[retailer]
+                    stock -= amounts[retailer]
+                else:
+                    max_amount = self.max_amount_possible(amounts[retailer], stock, qs[retailer])
+                    # determine amount sent, amount backlogged
+                    send[retailer] += max_amount  # max_possible(amounts[num])  # todo: check whether new tuples are correctly added to ds
+                    ds.append([0, amounts[retailer] - max_amount])
+                    # add new backlog to ds
+
+        else:
+            self.resolve_conflict_random(stock, ds)
+            for num, i in enumerate(ds):
+                send[num] += i
+                stock -= i
+            self.resolve_conflict_random(stock, amounts)
+            for i, amount in enumerate(amounts):
+                send[i] += amount
+                stock -= amount
+            # assigning to the retailers, update stock
+            # ...
 
         return send
+
+    def satisfy_ds(self, stock, ds):
+        send = [0, 0]
+        qs = [self.warehouse.retailers[i].Q for i in range(2)]
+        min_qs = min(qs)
+        del_counter = 0
+
+        def amount(elem):
+            return elem[1]
+
+        def retailer(elem):
+            return elem[0]
+
+        def add(elem):
+            send[retailer(elem)] += amount(elem)
+
+        def max_amount_possible(elem):
+            return amount(elem) - max(0, ceil((amount(elem) - stock) / qs[retailer(elem)]) * qs[retailer(elem)])
+
+        for i in ds:
+            if stock < min_qs:
+                for j in range(del_counter):
+                    del ds[0]
+                return send, stock
+
+            if amount(i) <= stock:
+                add(i)
+                stock -= amount(i)
+                del_counter += 1
+            else:
+                last_shipment = max_amount_possible(i)
+                send[retailer(i)] += last_shipment
+                i[1] -= last_shipment
+                stock -= last_shipment
+        for j in range(del_counter):
+            del ds[0]
+        return send, stock

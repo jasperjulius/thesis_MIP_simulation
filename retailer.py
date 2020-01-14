@@ -11,6 +11,7 @@ class Retailer:
             av_demand = 2 + 2 * number
             current_inv = av_demand * lead
         self.D = 0
+        self.ds_timebound = []
         self.seed = seed
         self.thomas = thomas
         self.number = number
@@ -44,6 +45,7 @@ class Retailer:
         self.pending_arrivals = self.construct_pending()
         self.doc_arrivals = self.construct_pending()
         self.D = 0
+        self.ds_timebound = []
 
     def update_morning(self, period):
         self.period = period
