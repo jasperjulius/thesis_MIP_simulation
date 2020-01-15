@@ -63,13 +63,14 @@ def print_times():
 first_row = 4
 
 # robj = rgen.R(10, 10, 10, 20, 20, 20, 1, 1, 1, repeat=2)
-s1 = rgen.R(1, 50, 30, 0, 51, 70, 0, 1, 1, 1, repeat=1, high_c_shortage=True, high_var=False)
-s2 = rgen.R(2, 48, 30, 0, 70, 70, 0, 1, 1, 1, repeat=1, high_c_shortage=True, high_var=False)
+s1 = rgen.R(1, 20, 20, 0, 50, 40, 0, 1, 1, 1, repeat=2, high_c_shortage=True, high_var=False, run_me_as=2)
+s2 = rgen.R(2, 48, 30, 0, 70, 70, 0, 1, 1, 1, repeat=1, high_c_shortage=True, high_var=False, run_me_as=-1)
+s3 = rgen.R(3, 40, 0, 0, 40, 0, 0, 10, 1, 1, repeat=20, high_c_shortage=True, high_var=False, run_me_as=1)
 
-scenarios = [s1]
+scenarios = [s3]
 
-length = 100
-warm_up = 1
+length = 3300
+warm_up = 300
 
 for scenario in scenarios:
 
@@ -79,7 +80,7 @@ for scenario in scenarios:
     sheet = wb[wb.sheetnames[0]]
     sheet["AH4"] = length - warm_up
 
-    r = scenario.r_same()
+    r = scenario.get_r()
     for current in r:
         sim = simulation.Simulation(length=length, warm_up=warm_up, stock=60, high_var=scenario.high_var,
                                     high_c_shortage=scenario.high_c_shortage)

@@ -7,6 +7,7 @@ import time
 import settings
 from math import ceil
 
+
 def amount_requested(retailer):
     R = retailer.R
     Q = retailer.Q
@@ -16,22 +17,24 @@ def amount_requested(retailer):
         retailer.doc_setup_counter += 1
     return amount
 
+
 def amounts_requested(warehouse, i):
     a = []
     for r in warehouse.retailers:
         a.append(amount_requested(r))
     return a
 
+
 def neg_binomial(n, p):
     mu = n * (1 - p) / p
     var = n * (1 - p) / p ** 2
     return ["neg bin:", n, p, mu, var]
 
-def binomial(n, p):
-    mu = n*p
-    var = n*p*(1-p)
-    return ["bin: ", n, p, mu, var]
 
+def binomial(n, p):
+    mu = n * p
+    var = n * p * (1 - p)
+    return ["bin: ", n, p, mu, var]
 
 
 class Simulation:
@@ -89,10 +92,13 @@ class Simulation:
                     if FIFO:
                         amounts_sent = self.fifo(ds, initial_amounts, i)  # currently only works for two retailers!
                     else:
+
                         flag = True
                         model = mip.MIP()
                         model.set_params(self.warehouse)
                         amounts_sent = model.optimal_quantities()
+                        self.update_ds_mip(initial_amounts, amounts_sent, ds)
+
                 else:
                     amounts_sent = [0 for i in range(self.num_retailers)]
 
@@ -209,6 +215,30 @@ class Simulation:
                 ds.append([retailer, amounts[retailer] - max_amount])
 
         return send
+
+    def update_ds_mip(self, _amounts_requested, _amounts_sent, ds):  # todo: ds initialization where?
+        if not ds:
+            ds.append([0, 0])
+            ds.append([1, 0])
+        amounts_requested = _amounts_requested.copy()
+        amounts_sent = _amounts_sent.copy()
+
+        def reduce_by(a1, a2):
+            return max(0, min(a1, a2))
+
+        for i in range(2):
+
+            a = reduce_by(ds[i][1], amounts_sent[i])
+            ds[i][1] -= a
+            amounts_sent[i] -= a
+
+            if amounts_sent[i] < amounts_requested[i]:
+                ds[i][1] += amounts_requested[i] - amounts_sent[i]
+
+            # erriting okay, set ds to zero, create new ds with difference amount_left_after_satisfying_ds, initial_order
+            # not enuf, reduce ds as far as possible,
+
+        # satisfy outstanding orders, add
 
     def satisfy_ds(self, stock, ds):
         send = [0, 0]
