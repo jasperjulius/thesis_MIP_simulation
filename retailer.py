@@ -2,7 +2,7 @@ from math import ceil
 
 class Retailer:
 
-    def __init__(self, number, periods, seed=None, lead=2, av_demand=10, c_holding=0.1, c_shortage=4.9, current_inv=30,
+    def __init__(self, number, periods, seed=None, lead=2, av_demand=10, c_holding=0.1, c_shortage=0.9, current_inv=30,
                  c_fixed_order=1.0, R=40, demands=None, thomas=False):
         if thomas:
             c_fixed_order = 5
@@ -21,7 +21,6 @@ class Retailer:
         self.doc_inv = []
         self.c_fixed_order = c_fixed_order  # [20,5,5]
         self.pending_arrivals = self.construct_pending()
-        self.doc_arrivals = self.construct_pending()
         self.R = R  #
         self.Q = ceil((2 * av_demand * c_fixed_order / c_holding) ** 0.5)  #
         self.doc_setup_counter = 0
@@ -38,22 +37,19 @@ class Retailer:
         else:
             self.demands = demands
 
-    def reset(self):
-        self.current_inv = self.doc_inv[0]
-        self.doc_inv = []
-
-        self.pending_arrivals = self.construct_pending()
-        self.doc_arrivals = self.construct_pending()
+    def reset(self, warm_up=None):
+        if not warm_up:
+            self.current_inv = self.doc_inv[0]
+            self.D = 0
+            self.pending_arrivals = self.construct_pending()
+            self.doc_inv = []
         self.doc_setup_counter = 0
-        self.D = 0
 
     def update_morning(self, period):
         self.period = period
         self.doc_inv.append(self.current_inv + self.pending_arrivals[0])
         self.current_inv += self.pending_arrivals[0]
-        self.doc_arrivals[period] = self.pending_arrivals[0]
         self.pending_arrivals[0] = 0
-        self.doc_arrivals.append(0)
 
     def update_evening(self):
 

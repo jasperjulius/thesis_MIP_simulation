@@ -167,8 +167,7 @@ class MIP:
         X_shortage = self.model.addVars(num_i, vtype=GRB.INTEGER, name='# sent out - shortage (helper var) ')
         if settings.order_setup:
             X_order_setup = self.model.addVars(num_i, vtype=GRB.INTEGER, name='# sent out - order setup (helper var) ')
-        X_fixed = self.model.addVars(num_i, vtype=GRB.BINARY,
-                                     name='binary delivering to i')  # wird ersetzt durch neuen constraint?
+
         t2 = time.time()
         for i in range(num_i):
             self.holding_objective(X_holding, i)
@@ -177,8 +176,6 @@ class MIP:
             if settings.order_setup:
                 self.order_setup_objective(X_order_setup, i)
 
-            X_fixed[i].Obj = self.p_c_fixed_order[i]
-
         t3 = time.time()
 
         self.model.addConstr(
@@ -186,8 +183,6 @@ class MIP:
         self.model.addConstrs(X_holding[i] == X_shortage[i] for i in X_holding)  # ct(i) hilfsvariable constraint
         if settings.order_setup:
             self.model.addConstrs(X_holding[i] == X_order_setup[i] for i in X_holding)  # ct(i) hilfsvariable constraint
-        self.model.addConstrs(
-            X_holding[i] <= X_fixed[i] * self.p_stock_warehouse for i in X_holding)  # ct fixed order costs
         t4 = time.time()
         self.model.optimize()
         t5 = time.time()

@@ -16,7 +16,6 @@ class Warehouse:
         self.c_holding = c_holding
         self.doc_stock = stock
         self.doc_inv = []
-        self.doc_arrivals = [0, 0, 0, 0, 0, 0]
         self.stock = stock
         self.R = R
         self.Q = 0
@@ -24,15 +23,19 @@ class Warehouse:
         self.retailers = []
         self.pending_arrivals = [0, 0, 0, 0, 0, 0]
         self.ds = []
+        self.doc_setup_counter = 0
 
-    def reset(self):
+    def reset(self, warm_up=None):
+
         for r in self.retailers:
-            r.reset()
-        self.stock = self.doc_stock
-        self.pending_arrivals = [0, 0, 0, 0, 0, 0]
-        self.doc_arrivals = [0, 0, 0, 0, 0, 0]
-        self.doc_inv = []
-        self.ds = []
+            r.reset(warm_up=warm_up)
+
+        if not warm_up:
+            self.stock = self.doc_stock
+            self.pending_arrivals = [0, 0, 0, 0, 0, 0]
+            self.ds = []
+            self.doc_inv = []
+        self.doc_setup_counter = 0
 
     # method for adding retailers
     def add_retailer(self, retailer):
@@ -63,7 +66,6 @@ class Warehouse:
         for r, d in zip(self.retailers, ds):
             r.D = d
 
-
     def print_stocks(self, period):
         print("period: ", period, "warehouse - stock: ", self.stock)
         for r in self.retailers:
@@ -75,7 +77,7 @@ class Warehouse:
         # return self.ds_timebound
 
     def sum_d_each_retailer(self):
-        result = [0,0]
+        result = [0, 0]
         for d in self.ds:
             result[d[0]] += d[1]
         return result
@@ -83,11 +85,9 @@ class Warehouse:
     def sum_ds(self):
         return sum([d[1] for d in self.ds])
 
-        # sum over ds_timebound; dependent on structure of ds_timebound
+    # sum over ds_timebound; dependent on structure of ds_timebound
 
     def update_morning(self, period):
-        self.doc_arrivals.append(0)
-        self.doc_arrivals[period] = self.pending_arrivals[0]
 
         for r in self.retailers:
             r.update_morning(period)
