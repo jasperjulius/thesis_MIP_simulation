@@ -2,18 +2,12 @@ from math import ceil
 
 class Retailer:
 
-    def __init__(self, number, periods, seed=None, lead=2, av_demand=10, c_holding=0.1, c_shortage=0.9, current_inv=30,
-                 c_fixed_order=1.0, R=40, demands=None, thomas=False):
-        if thomas:
-            c_fixed_order = 5
-            c_holding = 2
-            c_shortage = 4
-            av_demand = 2 + 2 * number
-            current_inv = av_demand * lead
+    def __init__(self, number, periods, seed=None, lead=2, av_demand=10, c_holding=0.1, c_shortage=4.9, current_inv=20,
+                 c_fixed_order=1.0, R=40, demands=None):
+
         self.seed = seed
-        self.thomas = thomas
         self.number = number
-        self.lead = lead  # [0,0,0], [1,1,1], [2,2,2]     thomas, pp. 35-36    # todo: params von thomas
+        self.lead = lead  # [0,0,0], [1,1,1], [2,2,2]     thomas, pp. 35-36
         self.current_inv = current_inv
         self.av_demand = av_demand  # [2,4]
         self.c_holding = c_holding  # [1,2,2]
@@ -25,9 +19,6 @@ class Retailer:
         self.Q = ceil((2 * av_demand * c_fixed_order / c_holding) ** 0.5)  #
         self.doc_setup_counter = 0
         self.D = 0
-
-        if thomas:
-            self.Q = 4 + 4 * number
         self.demands = []
         self.period = 0
         if demands is None:

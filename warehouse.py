@@ -3,14 +3,8 @@ from math import ceil
 
 class Warehouse:
 
-    def __init__(self, stock=100, R=60, lead=2, c_holding=0.1, c_fixed_order=1.5,
-                 thomas=False):  # todo: params von thomas, stehen in retailer
+    def __init__(self, stock=100, R=60, lead=2, c_holding=0.1, c_fixed_order=1.5):
 
-        if thomas:
-            c_fixed_order = 20
-            c_holding = 1
-            stock = 10
-        self.thomas = thomas
         self.av_demand = 0
         self.c_fixed_order = c_fixed_order
         self.c_holding = c_holding
@@ -45,8 +39,6 @@ class Warehouse:
 
         self.av_demand = demand
         self.Q = ceil((2 * demand * self.c_fixed_order / self.c_holding) ** 0.5)
-        if self.thomas is True:
-            self.Q = 12
 
     # method for sending to retailers
     def send_stock(self, amount, number_retailer):
@@ -109,6 +101,7 @@ class Warehouse:
         ip = self.stock
         for amount in self.pending_arrivals:
             ip += amount
+        ip -= self.sum_ds()
         return ip
 
     def add_stock(self, amount):

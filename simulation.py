@@ -7,7 +7,6 @@ import time
 import settings
 from math import ceil
 
-
 def amount_requested(retailer):
     R = retailer.R
     Q = retailer.Q
@@ -17,46 +16,55 @@ def amount_requested(retailer):
         retailer.doc_setup_counter += 1
     return amount
 
-
 def amounts_requested(warehouse, i):
     a = []
     for r in warehouse.retailers:
         a.append(amount_requested(r))
     return a
 
+def neg_binomial(n, p):
+    mu = n * (1 - p) / p
+    var = n * (1 - p) / p ** 2
+    return ["neg bin:", n, p, mu, var]
+
+def binomial(n, p):
+    mu = n*p
+    var = n*p*(1-p)
+    return ["bin: ", n, p, mu, var]
+
+
 
 class Simulation:
 
-    def __init__(self, num_retailers=2, length=100, warm_up=None, stock=100, stochastic=True, thomas=False):
+    def __init__(self, num_retailers=2, length=100, warm_up=None, stock=100, high_var=True, high_c_shortage=True):
         self.length = length
-        self.warehouse = wh.Warehouse(stock=stock, thomas=thomas)
+        self.warehouse = wh.Warehouse(stock=stock)
         self.stats = None
         self.num_retailers = num_retailers
         self.warm_up = warm_up
 
         for i in range(num_retailers):
-            seed = -1
-            if stochastic:
-
-                # seed = rand.randint(0, 10000, 1)[0]
-                # rand.seed(seed)
-                if not thomas:  # todo: if not thomas
-                    distr_name = "neg bin"
-                    n = 7
-                    p = 0.7
-                    self.distribution = (distr_name, n, p)
-                    random = [i for i in rand.negative_binomial(n, p, length)]
-                    # random = [max(0, int(round(i))) for i in rand.normal(10, 1, length)]    #todo: tryen mit höheren Rs, einfach interesse; params richtig labeln
-                    avg = sum(random) / len(random)
-                    pass
-                else:
-                    random = rand.poisson(2 * i + 2, length)  # todo: find out parameter
-                    # todo: alternatively compound poisson
-
+            seed = rand.randint(0, 10000, 1)[0]
+            # rand.seed(seed)
+            if not high_var:
+                n = 20
+                p = 0.5
+                self.distribution = binomial(n, p)
+                random = rand.binomial(n, p, length)
+                # random = [max(0, int(round(i))) for i in rand.normal(10, 0, length)]    #todo: tryen mit höheren Rs, einfach interesse; params richtig labeln
             else:
-                random = rand.negative_binomial(7, 0.7, length)
+                n = 20
+                p = 2 / 3
+                self.distribution = neg_binomial(n, p)
+                random = [i for i in rand.negative_binomial(n, p, length)]
+            avg = sum(random) / len(random)
 
-            r = rt.Retailer(i, self.length, seed=seed, demands=random, thomas=thomas)
+            r = rt.Retailer(i, self.length, seed=seed, demands=random)
+            if high_c_shortage:
+                r.c_shortage = 4.9
+            else:
+                r.c_shortage = 0.9
+
             self.warehouse.add_retailer(r)
 
     def run(self, FIFO=False, RAND=False):
@@ -79,8 +87,7 @@ class Simulation:
             if total_amount > self.warehouse.stock or (FIFO and self.warehouse.sum_ds() > 0):  # decision rule time
                 if self.warehouse.stock is not 0:
                     if FIFO:
-                        amounts_sent = self.fifo(ds, initial_amounts)  # currently only works for two retailers!
-                        pass
+                        amounts_sent = self.fifo(ds, initial_amounts, i)  # currently only works for two retailers!
                     else:
                         flag = True
                         model = mip.MIP()
@@ -89,27 +96,27 @@ class Simulation:
                 else:
                     amounts_sent = [0 for i in range(self.num_retailers)]
 
-        self.warehouse.send_stocks(amounts_sent)
-        self.warehouse.update_ds()
-        self.warehouse.update_doc_inv()
-        self.warehouse.add_stock(amount_requested(self.warehouse))
-        self.warehouse.update_evening()
+            self.warehouse.send_stocks(amounts_sent)
+            self.warehouse.update_ds()
+            self.warehouse.update_doc_inv()
+            self.warehouse.add_stock(amount_requested(self.warehouse))
+            self.warehouse.update_evening()
 
-        if flag:
-            mytimes.add_interval(mip.t2 - mip.t1)
-            mytimes.add_interval(mip.t3 - mip.t2)
-            mytimes.add_interval(mip.t4 - mip.t3)
-            mytimes.add_interval(mip.t5 - mip.t4)
-        else:
-            mytimes.add_interval(0)
-            mytimes.add_interval(0)
-            mytimes.add_interval(0)
-            mytimes.add_interval(0)
-        if i == 0:
-            mytimes.delete_first()
-        elif (i + 1) % 1000 == 0:
-            mytimes.form_groups()
-        mytimes.next_group()
+            if flag:
+                mytimes.add_interval(mip.t2 - mip.t1)
+                mytimes.add_interval(mip.t3 - mip.t2)
+                mytimes.add_interval(mip.t4 - mip.t3)
+                mytimes.add_interval(mip.t5 - mip.t4)
+            else:
+                mytimes.add_interval(0)
+                mytimes.add_interval(0)
+                mytimes.add_interval(0)
+                mytimes.add_interval(0)
+            if i == 0:
+                mytimes.delete_first()
+            elif (i + 1) % 1000 == 0:
+                mytimes.form_groups()
+            mytimes.next_group()
 
     def collect_statistics(self):
         rt_invs = []
@@ -168,7 +175,7 @@ class Simulation:
     def max_amount_possible(amount, stock, q):
         return amount - max(0, ceil((amount - stock) / q) * q)
 
-    def fifo(self, _ds, _amounts):
+    def fifo(self, _ds, _amounts, period):
         def takeSecond(elem):
             return elem[1]
 
@@ -184,9 +191,13 @@ class Simulation:
 
         ips = []
         j = 0
-        for r in self.warehouse.retailers:
-            ips.append((j, r.ip()))  # todo: change to more accurate calculation of who ordered first, including reorder point R, and demand of last period
-            j += 1                   #  watch out with "last period" - min(0, period -1)
+        for r in self.warehouse.retailers:  # todo: das muss nochmal überdacht werden...
+            d = r.demands[min(0, period - 1)]
+            R = r.R
+            ip = r.ip()
+            ips.append((j, (d - (R - ip)) / d))
+            j += 1
+
         ips.sort(key=takeSecond)
         for retailer, ip in ips:
             if amounts[retailer] <= stock:
@@ -198,7 +209,6 @@ class Simulation:
                 ds.append([retailer, amounts[retailer] - max_amount])
 
         return send
-
 
     def satisfy_ds(self, stock, ds):
         send = [0, 0]
