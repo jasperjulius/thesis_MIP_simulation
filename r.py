@@ -1,18 +1,18 @@
 class R:
 
-    def __init__(self, number, R0, R1, R2, R0max, R1max, R2max, step0, step1, step2, repeat=1, high_var=True,
+    def __init__(self, number, R0, R1, R2, step0, step1, step2, repeat=1, high_var=True,
                  high_c_shortage=True, run_me_as=0):
         self.run_me_as = run_me_as
         self.number = number
         self.high_var = high_var
         self.high_c_shortage = high_c_shortage
         self.repeat = repeat
-        self.R0 = R0
-        self.R1 = R1
-        self.R2 = R2
-        self.R0max = R0max
-        self.R1max = R1max
-        self.R2max = R2max
+        self.R0 = R0[0]
+        self.R1 = R1[0]
+        self.R2 = R2[0]
+        self.R0max = R0[1]
+        self.R1max = R1[1]
+        self.R2max = R2[1]
         self.step0 = step0
         self.step1 = step1
         self.step2 = step2

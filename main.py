@@ -39,43 +39,35 @@ def print_times():
 
 # todo: rta - in MIP, solving the model is currently taking up 75% of computation time - improvement possible?
 
-# todo: große frage: sind die schwankungen vertretbar? andere wahrscheinlichkeitsvertilung ausprobieren?
+# IN_t = IN_t-1 - mu_t-1 + O_t
 
-
-# todo: diese!!!
-# todo: retailer 2 hat in MIP sehr hohe shortage costs, wird der gesendete amount eventuell nur hinsichtlich holding costs optimisiert? oder wird retailer 1 anderweitig bevorzugt? was da los?
-#  implementierung der ds funktionert nicht in MIP, da ds in der fifo funktion erzeugt werden -> ändern! vielleicht ist es das
-
-# pyhs_inv_t = phys_inv_t-1 - demand_t-1 + pending arrivals_t
-
-
-# josef: fifo - neue Implementierung mit "not full order has to be delivered, but multiple of q" - viable? yes!
-# backorders tracken in neuer var D, wird priorisiert in FIFO
-#    demand with lower fluctuation -> MIP wieder besser!
-# b zu h viel extremer, var in variation coeficient
-# warm-up (zukunft)
 # josef: lead time = 0 auch als case? erstmal nicht wichtig, L=2 ist okay! Q eoq auch gut
-#    retailer mit unterschiedichen lead times auch als case? wenn ja, wie wird dann vorausgerechnet? kriegt jeder retailer sein eigenes zeitfenster?
-# josef:  pending deliveries als Q? habe es erstmal O genannt, wegen Q aus R, Q: okay
+#    retailer mit unterschiedichen lead times auch als case? wenn ja, wie wird dann vorausgerechnet? kriegt jeder retailer sein eigenes zeitfenster(->ja)?
 # einleitung, literatur,
-# rückwärtssuche: wer zitiert zB. gallego?, axsäter
+# rückwärtssuche (für aktuelle papers zum thema): wer zitiert zB. gallego2007?, axsäter
 
 first_row = 4
 
 # robj = rgen.R(10, 10, 10, 20, 20, 20, 1, 1, 1, repeat=2)
-s1 = rgen.R(1, 20, 20, 0, 50, 40, 0, 1, 1, 1, repeat=2, high_c_shortage=True, high_var=False, run_me_as=2)
-s2 = rgen.R(2, 48, 30, 0, 70, 70, 0, 1, 1, 1, repeat=1, high_c_shortage=True, high_var=False, run_me_as=-1)
-s3 = rgen.R(3, 40, 0, 0, 40, 0, 0, 10, 1, 1, repeat=20, high_c_shortage=True, high_var=False, run_me_as=1)
+s3 = rgen.R(3, (20, 40), (10, 20), (10, 20), 4, 4, 4, repeat=1, high_c_shortage=True, high_var=False, run_me_as=0)
 
 scenarios = [s3]
 
-length = 3300
-warm_up = 300
+length = 1100
+warm_up = 100
+lengths = {100: 'short', 1000: 'mid', 10000: 'long'}
 
 for scenario in scenarios:
 
+    if scenario.duration < 100:
+        temp_name = 'short'
+    elif scenario.duration < 1000:
+        temp_name = 'mid'
+    else:
+        temp_name = 'long'
+
     wb = openpyxl.load_workbook(
-        '/Users/jasperinho/PycharmProjects/thesis_MIP/generated_sheets/templates/template short.xlsx',
+        '/Users/jasperinho/PycharmProjects/thesis_MIP/generated_sheets/templates/template ' + temp_name + '.xlsx',
         read_only=False)
     sheet = wb[wb.sheetnames[0]]
     sheet["AH4"] = length - warm_up
