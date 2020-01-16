@@ -49,12 +49,12 @@ def print_times():
 first_row = 4
 
 # robj = rgen.R(10, 10, 10, 20, 20, 20, 1, 1, 1, repeat=2)
-s3 = rgen.R(3, (20, 40), (10, 20), (10, 20), 4, 4, 4, repeat=1, high_c_shortage=True, high_var=False, run_me_as=0)
+s3 = rgen.R(3, (20, 70), (15, 50), (15, 50), 1, 1, 1, repeat=1, high_c_shortage=True, high_var=False, run_me_as=0)
 
 scenarios = [s3]
 
-length = 1100
-warm_up = 100
+length = 1050
+warm_up = 50
 lengths = {100: 'short', 1000: 'mid', 10000: 'long'}
 
 for scenario in scenarios:
@@ -63,8 +63,10 @@ for scenario in scenarios:
         temp_name = 'short'
     elif scenario.duration < 1000:
         temp_name = 'mid'
-    else:
+    elif scenario.duration < 10000:
         temp_name = 'long'
+    else:
+        temp_name = 'reeeally long'
 
     wb = openpyxl.load_workbook(
         '/Users/jasperinho/PycharmProjects/thesis_MIP/generated_sheets/templates/template ' + temp_name + '.xlsx',
