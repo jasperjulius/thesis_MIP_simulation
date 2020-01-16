@@ -35,9 +35,7 @@ def print_times():
 
 # fixed order costs gibt's nicht, sondern order setup costs, die beim retailer anfallen fürs bestellen
 #  fragestellung: wie häufig wird er im zeitraum (von t = 0 bis t = 2*L) nochmal bestellen?
-# todo: excel - same same comparison fortführen - warum ist die neue schlechter als die alte?
-
-# todo: rta - in MIP, solving the model is currently taking up 75% of computation time - improvement possible?
+# todo: (probably never) excel - same same comparison fortführen - warum ist die neue schlechter als die alte?
 
 # IN_t = IN_t-1 - mu_t-1 + O_t
 
@@ -92,9 +90,8 @@ for scenario in scenarios:
             sim.warehouse.retailers[1].seed)
         pre1 = time.time()
 
-        settings.random = False
-        settings.order_setup = False
-        settings.no_d = False
+        settings.random = False  # todo: kann raus
+        settings.no_d = False  # todo: kann raus
         sim.run(FIFO=False)
 
         after1 = time.time()
@@ -105,7 +102,6 @@ for scenario in scenarios:
         pre2 = time.time()
 
         settings.random = False
-        settings.order_setup = False
         settings.no_d = False
         sim.run(FIFO=True)
 

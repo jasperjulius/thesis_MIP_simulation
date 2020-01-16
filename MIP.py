@@ -3,6 +3,7 @@ import mytimes
 import time
 from math import trunc
 import settings
+from combine_graphs import combine
 
 t1 = 0
 t2 = 0
@@ -83,12 +84,15 @@ class MIP:
         graph.append((-x + 1, graph[-1][1] + count))
 
         # transform tuples into two lists
+        if settings.combine:
+            return graph
+
         list_x, list_y = map(list, zip(*graph))
 
         # scale graph according to holding costs of i
-        list_y = [j * self.p_c_holding[i] for j in list_y]
 
         # add curve as one connected, but not continuous obj function for variable X[i]
+        list_y = [j * self.p_c_holding[i] for j in list_y]
         self.model.setPWLObj(X_holding[i], list_x, list_y)
         return
 
@@ -105,11 +109,15 @@ class MIP:
             graph.append((current, graph[-1][1] + count * (graph[-1][0] - current)))
             count += 1
 
-        # insert final (first) point with x = 0, maximal y calculated as current final y in list + count (+1?)
+        # insert final (first) point with x = 0, maximal y calculated as current final y in list + todo: count (+1?)
         graph.append((0, graph[-1][1] + count * (graph[-1][0])))
         graph.reverse()
-        list_x, list_y = map(list, zip(*graph))
+        if settings.combine:
+            return graph
 
+        list_x, list_y = map(list, zip(*graph))
+        for j in range(len(list_y)):
+            list_y[j] *= self.p_c_shortage[i]
         self.model.setPWLObj(X_shortage[i], list_x, list_y)
 
     # erster wert jeweils für t = 0, also "jetzt"; aktuell wird so gerechnet, als kämen deliveries first thing in the morning an, und sind somit im täglichen inventory zur berechnung der holding/shortage costs mit drin
@@ -132,8 +140,8 @@ class MIP:
 
                 x = base_x + (j + shift_forward) * av_demand
                 x_follow = x + 1
-                y = max(1, trunc(length / max(1, j))) * cost
-                y_follow = max(1, trunc(length / max(1, j + 1))) * cost
+                y = max(1, trunc(length / max(1, j)))
+                y_follow = max(1, trunc(length / max(1, j + 1)))
 
                 if j == 0:
                     graph.append((x - 1, y))
@@ -142,11 +150,16 @@ class MIP:
                 if j == max(range(length)):
                     graph.append((x_follow + 1, y_follow))
         else:
-            graph.append((0, cost))  # change to (0, 0) for integrating other constraint here
-            graph.append((1, cost))
-            graph.append((2, cost))
+            graph.append((0, 1))  # change to (0, 0) for integrating other constraint here
+            graph.append((1, 1))
+            graph.append((2, 1))
+
+        if settings.combine:
+            return graph
 
         list_x, list_y = map(list, zip(*graph))
+        for j in range(len(list_y)):
+            list_y[j] *= cost
         self.model.setPWLObj(X_order_setup[i], list_x, list_y)
 
         pass
@@ -165,23 +178,24 @@ class MIP:
         num_i = len(self.p_lead)
         X_holding = self.model.addVars(num_i, vtype=GRB.INTEGER, name='# sent out - holding')
         X_shortage = self.model.addVars(num_i, vtype=GRB.INTEGER, name='# sent out - shortage (helper var) ')
-        if settings.order_setup:
-            X_order_setup = self.model.addVars(num_i, vtype=GRB.INTEGER, name='# sent out - order setup (helper var) ')
+        X_order_setup = self.model.addVars(num_i, vtype=GRB.INTEGER, name='# sent out - order setup (helper var) ')
 
         t2 = time.time()
-        for i in range(num_i):
-            self.holding_objective(X_holding, i)
-
-            self.shortage_objective(X_shortage, i)
-            if settings.order_setup:
-                self.order_setup_objective(X_order_setup, i)
+        for i in range(num_i):  # todo: test dis bich, compare times
+            g1 = self.holding_objective(X_holding, i)
+            g2 = self.shortage_objective(X_shortage, i)
+            g3 = self.order_setup_objective(X_order_setup, i)
+            if settings.combine:
+                g_combined = combine(g1, self.p_c_holding[i], g2, self.p_c_shortage, g3, self.p_c_fixed_order)
+                list_x, list_y = map(list, zip(*g_combined))
+                self.model.setPWLObj(X_holding[i], list_x, list_y)
 
         t3 = time.time()
 
         self.model.addConstr(
             quicksum(X_holding[i] for i in X_holding) <= self.p_stock_warehouse)  # ct max capacity at warehouse
-        self.model.addConstrs(X_holding[i] == X_shortage[i] for i in X_holding)  # ct(i) hilfsvariable constraint
-        if settings.order_setup:
+        if not settings.combine:
+            self.model.addConstrs(X_holding[i] == X_shortage[i] for i in X_holding)  # ct(i) hilfsvariable constraint
             self.model.addConstrs(X_holding[i] == X_order_setup[i] for i in X_holding)  # ct(i) hilfsvariable constraint
         t4 = time.time()
         self.model.optimize()
