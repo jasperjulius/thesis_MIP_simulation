@@ -10,6 +10,7 @@ def combine(g1, c1, g2, c2, g3, c3):
         if not p1[0] == p2[0] == p3[0]:
             print("WARNING: x values not alligned")
         combined_graph.append((x_val(p1), c1 * y_val(p1) + c2 * y_val(p2) + c3 * y_val(p3)))
+    pass
     return combined_graph
 
 

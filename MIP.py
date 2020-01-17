@@ -10,6 +10,9 @@ t2 = 0
 t3 = 0
 t4 = 0
 t5 = 0
+t6 = 0
+t7 = 0
+t8 = 0
 
 
 class MIP:
@@ -83,15 +86,16 @@ class MIP:
         # add final point with  (last_point_x + 1, last_point_y + count)
         graph.append((-x + 1, graph[-1][1] + count))
 
+        graph_out_of_range = [g for g in graph if g[0] > self.p_stock_warehouse]
+        for i in range(len(graph_out_of_range) - 2):
+            del graph[-1]
+
         # transform tuples into two lists
         if settings.combine:
             return graph
 
         list_x, list_y = map(list, zip(*graph))
-
         # scale graph according to holding costs of i
-
-        # add curve as one connected, but not continuous obj function for variable X[i]
         list_y = [j * self.p_c_holding[i] for j in list_y]
         self.model.setPWLObj(X_holding[i], list_x, list_y)
         return
@@ -112,6 +116,13 @@ class MIP:
         # insert final (first) point with x = 0, maximal y calculated as current final y in list + todo: count (+1?)
         graph.append((0, graph[-1][1] + count * (graph[-1][0])))
         graph.reverse()
+
+        graph_out_of_range = [g for g in graph if g[0] > self.p_stock_warehouse]
+        for i in range(len(graph_out_of_range) - 1):
+            del graph[-1]
+        if not graph or len(graph) < 2:
+            graph = [(0, 0), (1, 0)]
+
         if settings.combine:
             return graph
 
@@ -145,15 +156,24 @@ class MIP:
 
                 if j == 0:
                     graph.append((x - 1, y))
-                graph.append((x, y))
-                graph.append((x_follow, y_follow))
+                if not y == y_follow:
+                    graph.append((x, y))
+                    graph.append((x_follow, y_follow))
                 if j == max(range(length)):
                     graph.append((x_follow + 1, y_follow))
+
         else:
             graph.append((0, 1))  # change to (0, 0) for integrating other constraint here
             graph.append((1, 1))
             graph.append((2, 1))
-
+        len_before = len(graph)
+        graph = [g for g in graph if g[0] <= self.p_stock_warehouse]
+        if graph and len(graph) > 1 and len(graph) < len_before:
+            graph.append((graph[-1][0] + 1, graph[-1][1]))
+        else:
+            graph = []
+            graph.append((0, 0))
+            graph.append((1, 0))
         if settings.combine:
             return graph
 
@@ -172,34 +192,48 @@ class MIP:
         global t3
         global t4
         global t5
+        global t6
+        global t7
+        global t8
 
         t1 = time.time()
-
         num_i = len(self.p_lead)
         X_holding = self.model.addVars(num_i, vtype=GRB.INTEGER, name='# sent out - holding')
-        X_shortage = self.model.addVars(num_i, vtype=GRB.INTEGER, name='# sent out - shortage (helper var) ')
-        X_order_setup = self.model.addVars(num_i, vtype=GRB.INTEGER, name='# sent out - order setup (helper var) ')
+        X_shortage = None
+        X_order_setup = None
+        if not settings.combine:
+            X_shortage = self.model.addVars(num_i, vtype=GRB.INTEGER, name='# sent out - shortage (helper var) ')
+            X_order_setup = self.model.addVars(num_i, vtype=GRB.INTEGER, name='# sent out - order setup (helper var) ')
 
         t2 = time.time()
+
         for i in range(num_i):  # todo: test dis bich, compare times
+
             g1 = self.holding_objective(X_holding, i)
             g2 = self.shortage_objective(X_shortage, i)
             g3 = self.order_setup_objective(X_order_setup, i)
+            if i == 0:
+                t3 = time.time()
+            else:
+                t5 = time.time()
+
             if settings.combine:
-                g_combined = combine(g1, self.p_c_holding[i], g2, self.p_c_shortage, g3, self.p_c_fixed_order)
+                g_combined = combine(g1, self.p_c_holding[i], g2, self.p_c_shortage[i], g3, self.p_c_fixed_order[i])
                 list_x, list_y = map(list, zip(*g_combined))
                 self.model.setPWLObj(X_holding[i], list_x, list_y)
-
-        t3 = time.time()
+            if i == 0:
+                t4 = time.time()
+            else:
+                t6 = time.time()
 
         self.model.addConstr(
             quicksum(X_holding[i] for i in X_holding) <= self.p_stock_warehouse)  # ct max capacity at warehouse
         if not settings.combine:
             self.model.addConstrs(X_holding[i] == X_shortage[i] for i in X_holding)  # ct(i) hilfsvariable constraint
             self.model.addConstrs(X_holding[i] == X_order_setup[i] for i in X_holding)  # ct(i) hilfsvariable constraint
-        t4 = time.time()
+        t7 = time.time()
         self.model.optimize()
-        t5 = time.time()
+        t8 = time.time()
         final = []
         for i in range(num_i):
             final.append(int(X_holding.get(i).X))

@@ -110,10 +110,12 @@ class Simulation:
 
             if flag:
                 mytimes.add_interval(mip.t2 - mip.t1)
-                mytimes.add_interval(mip.t3 - mip.t2)
-                mytimes.add_interval(mip.t4 - mip.t3)
-                mytimes.add_interval(mip.t5 - mip.t4)
+                mytimes.add_interval(mip.t3 - mip.t2 + mip.t5 - mip.t4)
+                mytimes.add_interval(mip.t4 - mip.t3 + mip.t6 - mip.t5)
+                mytimes.add_interval(mip.t7 - mip.t6)
+                mytimes.add_interval(mip.t8 - mip.t7)
             else:
+                mytimes.add_interval(0)
                 mytimes.add_interval(0)
                 mytimes.add_interval(0)
                 mytimes.add_interval(0)

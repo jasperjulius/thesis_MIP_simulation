@@ -1,7 +1,8 @@
 class R:
 
     def __init__(self, number, R0, R1, R2, step0, step1, step2, repeat=1, high_var=True,
-                 high_c_shortage=True, run_me_as=0):
+                 high_c_shortage=True, fifo=False, run_me_as=0):
+        self.fifo = fifo
         self.run_me_as = run_me_as
         self.number = number
         self.high_var = high_var
@@ -26,6 +27,8 @@ class R:
             return self.r_same()
         if self.run_me_as == 2:
             return self.r_connected_retailers()
+        if self.run_me_as == 3:
+            return self.r_sum()
 
     def r(self):
         i = 0
@@ -35,6 +38,15 @@ class R:
                     for j in range(self.repeat):
                         yield (r0, r1, r2, i)
                         i += 1
+
+    def r_sum(self):
+        i = 0
+        for r0 in range(self.R0, self.R0max + 1, self.step0):
+            for r1 in range(self.R1, self.R1max + 1, self.step1):
+                for r2 in range(self.R2, self.R2max + 1, self.step2):
+                    if 85 < r1+r2 < 105:
+                        yield (r0, r1, r2, i)
+                    i += 1
 
     def r_connected_retailers(self):
         i = 0
