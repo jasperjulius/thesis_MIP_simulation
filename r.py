@@ -44,9 +44,10 @@ class R:
         for r0 in range(self.R0, self.R0max + 1, self.step0):
             for r1 in range(self.R1, self.R1max + 1, self.step1):
                 for r2 in range(self.R2, self.R2max + 1, self.step2):
-                    if 85 < r1+r2 < 105:
-                        yield (r0, r1, r2, i)
-                    i += 1
+                    for j in range(self.repeat):
+                        if 85 < r1+r2 < 105:
+                            yield (r0, r1, r2, i)
+                            i += 1
 
     def r_connected_retailers(self):
         i = 0

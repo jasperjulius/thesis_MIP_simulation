@@ -31,11 +31,17 @@ def print_times():
 
 # schwankungen behoben, jetzt ist FIFO besser als MIP...
 
-# todo: literatur für präsentation
-
 # fixed order costs gibt's nicht, sondern order setup costs, die beim retailer anfallen fürs bestellen
 #  fragestellung: wie häufig wird er im zeitraum (von t = 0 bis t = 2*L) nochmal bestellen?
-# todo: (probably never) excel - same same comparison fortführen - warum ist die neue schlechter als die alte?
+
+# todo: change order of execution in simulation according to axsäter 2002
+# todo: cost calculation: should probably apply to inventory at the end of the period, basically the same as at the beginning of period before arrivals
+# todo: reflect in MIP; estimated inventories should be at end of period
+# todo: was nehmen für holding costs warehouse?
+# todo: implement alternative to MIP that utilizes same thought but only with x_i as positive multiple of Q_i
+
+# todo: extend main, excel sheets to run three simulations (mip, mip without splittig, fcfs)
+# todo: parallelize - 8-core
 
 # IN_t = IN_t-1 - mu_t-1 + O_t
 
@@ -46,34 +52,36 @@ def print_times():
 
 first_row = 4
 
-s1 = rgen.R("4er 10k low var mip", (15, 39), (30, 55), (30, 55), 4, 4, 4, repeat=1, high_c_shortage=True, high_var=False, run_me_as=0)
-s2 = rgen.R("4er 10k low var fifo", (50, 70), (18, 38), (18, 38), 4, 4, 4, repeat=1, high_c_shortage=True, high_var=False, run_me_as=0)
-s3 = rgen.R("4er 10k low var mip low ratio", (15, 39), (30, 55), (30, 55), 4, 4, 4, repeat=1, high_c_shortage=False, high_var=False, run_me_as=0)
-s4 = rgen.R("4er 10k low var fifo low ratio", (50, 70), (18, 38), (18, 38), 4, 4, 4, repeat=1, high_c_shortage=False, high_var=False, run_me_as=0)
-
 schwankungen1 = rgen.R("schwankungen 20k mip low var", (15, 15), (40, 40), (40, 40), 4, 4, 4, repeat=20, high_c_shortage=False, high_var=False, run_me_as=0)
-schwankungen2 = rgen.R("schwankungen 20k mip high var", (15, 15), (40, 40), (40, 40), 4, 4, 4, repeat=20, high_c_shortage=False, high_var=True, run_me_as=0)
+schwankungen2 = rgen.R("schwankungen 20k mip high var", (25, 40), (40, 40), (40, 40), 15, 5, 5, repeat=30, high_c_shortage=False, high_var=True, run_me_as=0)
+schwankungen3 = rgen.R("schwankungen 20k mip high var mip", (10, 10), (10, 10), (76, 76), 1, 1, 1, repeat=30, high_c_shortage=False, high_var=True, run_me_as=0)
+schwankungen4 = rgen.R("20k fifo schwnkungen low", (58, 58), (26, 26), (26, 26), 1, 1, 1, repeat=30, high_c_shortage=True, high_var=False, run_me_as=0, fifo=True)
+schwankungen5 = rgen.R("20k fifo schwnkungen low - low", (58, 58), (26, 26), (26, 26), 1, 1, 1, repeat=30, high_c_shortage=False, high_var=False, run_me_as=0, fifo=True)
 
-# next block to run for low var
-sl1 = rgen.R("20k low var mip", (12, 21), (26, 56), (26, 56), 3, 5, 5, repeat=1, high_c_shortage=True, high_var=False, run_me_as=0)
-sl2 = rgen.R("20k low var fifo", (55, 61), (23, 33), (23, 33), 1, 1, 1, repeat=1, high_c_shortage=True, high_var=False, run_me_as=0, fifo=True)
-sl3 = rgen.R("20k low var mip low ratio", (12, 21), (26, 56), (26, 56), 3, 5, 5, repeat=1, high_c_shortage=False, high_var=False, run_me_as=0)
-sl4 = rgen.R("20k low var fifo low ratio", (55, 61), (19, 25), (19, 25), 1, 1, 1, repeat=1, high_c_shortage=False, high_var=False, run_me_as=0, fifo=True)
-
-# todo: not 100% sure about values
+# low var
 # high ratio
-sh5 = rgen.R("20k high var mip", (15, 35), (30, 55), (30, 55), 4, 4, 4, repeat=1, high_c_shortage=True, high_var=True, run_me_as=0)
-sh6 = rgen.R("20k high var fifo", (50, 80), (20, 40), (20, 50), 2, 2, 2, repeat=1, high_c_shortage=True, high_var=True, run_me_as=0, fifo=True)
+low1 = rgen.R("20k mip low_var high_s rad3", (0, 10), (0, 15), (65, 80), 2, 3, 3, repeat=1, high_c_shortage=True, high_var=False, run_me_as=0)
+# low_final2 = rgen.R("100k low var fifo ", (55, 61), (23, 29), (23, 29), 1, 1, 1, repeat=1, high_c_shortage=True, high_var=False, run_me_as=0, fifo=True)
 # low ratio
-sl9 = rgen.R("10k 10er high var low mip", (5, 30), (10, 80), (10, 80), 5, 10, 10, repeat=1, high_c_shortage=False, high_var=True, run_me_as=3)
+low3 = rgen.R("20k mip low_var mip low_s rad3", (4, 8), (0, 6), (65, 75), 1, 2, 2, repeat=1, high_c_shortage=False, high_var=False, run_me_as=0)
+# low_final4 = rgen.R("100k low var fifo low ratio", (57, 60), (20, 22), (20, 22), 1, 1, 1, repeat=1, high_c_shortage=False, high_var=False, run_me_as=0, fifo=True)
+
+# high var
+# high ratio
+high1 = rgen.R("20k mip high_var mip high_s rad3", (0, 6), (0, 15), (75, 85), 1, 3, 2, repeat=1, high_c_shortage=True, high_var=True, run_me_as=0)
+# high_final2 = rgen.R("100k high var fifo", (55, 61), (29, 39), (29, 37), 1, 1, 1, repeat=1, high_c_shortage=True, high_var=True, run_me_as=0, fifo=True)
+# low ratio
+high3 = rgen.R("20k mip high_var mip low_s rad3", (0, 6), (0, 10), (71, 79), 1, 3, 2, repeat=1, high_c_shortage=False, high_var=True, run_me_as=0)
+# high_final4 = rgen.R("100k high var fifo - low", (55, 61), (21, 31), (21, 31), 1, 1, 1, repeat=1, high_c_shortage=False, high_var=True, run_me_as=0, fifo=True)
+
+# new mip scenarios
+teste1 = rgen.R("new mip - first test", (4, 20), (30, 60), (30, 60), 2, 3, 3, repeat=1, high_c_shortage=True, high_var=False, run_me_as=0)
+teste2 = rgen.R("new mip no splitting - second test", (10, 40), (30, 60), (30, 60), 10, 20, 20, repeat=1, high_c_shortage=True, high_var=False, run_me_as=0)
 
 
-s7 = rgen.R("4er schritte 10k high var mip low ratio", (15, 35), (30, 55), (30, 55), 4, 4, 4, repeat=1, high_c_shortage=False, high_var=True, run_me_as=0)
-s8 = rgen.R("4er schritte 10k high var fifo low ratio", (50, 80), (20, 40), (20, 50), 2, 2, 2, repeat=1, high_c_shortage=False, high_var=True, run_me_as=0, fifo=True)
+scenarios = [teste2]
 
-scenarios = [sl1, sl2, sl3, sl4]
-
-length = 20100
+length = 2100
 warm_up = 100
 lengths = {100: 'short', 1000: 'mid', 10000: 'long'}
 
@@ -110,19 +118,21 @@ for scenario in scenarios:
         sheet["C%d" % (first_row + current[3])] = sim.warehouse.retailers[1].R
         sheet["D%d" % (first_row + current[3])] = str(sim.warehouse.retailers[0].seed) + "," + str(
             sim.warehouse.retailers[1].seed)
-        pre1 = time.time()
 
-        settings.combine = True
-        settings.random = False  # todo: kann raus
-        settings.no_d = False  # todo: kann raus
-        fifo = scenario.fifo
-        sim.run(FIFO=fifo)
+        if not scenario.fifo:
+            pre1 = time.time()
+            # settings.ignore = True
+            settings.no_batch_splitting = True
+            settings.combine = True
+            settings.random = False  # todo: kann raus
+            settings.no_d = False  # todo: kann raus
+            sim.run(FIFO=False)
 
-        after1 = time.time()
-        print_times()
-        results_mip = sim.collect_statistics()
-        sim.reset()
-        print_results_to_sheet(results_mip, sheet, current[3], 7)
+            after1 = time.time()
+            print_times()
+            results_mip = sim.collect_statistics()
+            sim.reset()
+            print_results_to_sheet(results_mip, sheet, current[3], 7)
         pre2 = time.time()
 
         settings.combine = False
@@ -135,7 +145,8 @@ for scenario in scenarios:
         results_fifo = sim.collect_statistics()
         sim.reset()
         print_results_to_sheet(results_fifo, sheet, current[3], 18)
-        sheet["E%d" % (first_row + current[3])] = after1 - pre1
+        if not scenario.fifo:
+            sheet["E%d" % (first_row + current[3])] = after1 - pre1
         sheet["F%d" % (first_row + current[3])] = after2 - pre2
 
     sheet["AH8"] = sim.distribution[0]
@@ -148,5 +159,5 @@ for scenario in scenarios:
     sheet["AI12"] = sim.warehouse.retailers[0].c_shortage
     sheet["AJ12"] = sim.warehouse.retailers[1].c_holding
     sheet["Ak12"] = sim.warehouse.retailers[1].c_shortage
-    name = "generated_sheets/the real deal/" + str(scenario.number) + ".xlsx"
+    name = "generated_sheets/after_mid/" + str(scenario.number) + ".xlsx"
     wb.save(name)

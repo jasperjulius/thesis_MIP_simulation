@@ -70,10 +70,10 @@ class Simulation:
 
             self.warehouse.add_retailer(r)
 
-    def run(self, FIFO=False, RAND=False):
+    def run(self, FIFO=False):
 
         for i in range(self.length):
-            # self.warehouse.print_stocks(i)
+
             if i == self.warm_up:
                 self.reset(warm_up=self.warm_up)
             self.warehouse.update_morning(i)
@@ -81,13 +81,13 @@ class Simulation:
 
             initial_amounts = amounts_requested(self.warehouse, i)
             ds = self.warehouse.get_ds()
-            if settings.no_d:
-                ds = []
-            total_amount = sum(initial_amounts) + self.warehouse.sum_ds()
+            each_retailer_d = self.warehouse.sum_d_each_retailer()
+            total_orders = [i + j for i, j in zip(each_retailer_d, initial_amounts)]
+            total_amount = sum(initial_amounts) + sum(each_retailer_d)
             amounts_sent = initial_amounts.copy()
             flag = False
 
-            if total_amount > self.warehouse.stock or (FIFO and self.warehouse.sum_ds() > 0):  # decision rule time
+            if total_amount > self.warehouse.stock or (FIFO and self.warehouse.sum_ds() > 0) or settings.ignore:  # decision rule time
                 if self.warehouse.stock is not 0:
                     if FIFO:
                         amounts_sent = self.fifo(ds, initial_amounts, i)  # currently only works for two retailers!
@@ -95,7 +95,7 @@ class Simulation:
 
                         flag = True
                         model = mip.MIP()
-                        model.set_params(self.warehouse)
+                        model.set_params(self.warehouse, total_orders)
                         amounts_sent = model.optimal_quantities()
                         self.update_ds_mip(initial_amounts, amounts_sent, ds)
 
@@ -200,7 +200,7 @@ class Simulation:
         ips = []
         j = 0
         for r in self.warehouse.retailers:  # todo: das muss nochmal überdacht werden...
-            d = r.demands[min(0, period - 1)]
+            d = min(1, r.demands[min(0, period - 1)])
             R = r.R
             ip = r.ip()
             ips.append((j, (d - (R - ip)) / d))
