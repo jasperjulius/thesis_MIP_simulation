@@ -38,7 +38,7 @@ class Warehouse:
         demand = sum(r.av_demand for r in self.retailers)
 
         self.av_demand = demand
-        self.Q = ceil((2 * demand * self.c_fixed_order / self.c_holding) ** 0.5)
+        self.Q = sum(r.Q for r in self.retailers)
 
     # method for sending to retailers
     def send_stock(self, amount, number_retailer):
