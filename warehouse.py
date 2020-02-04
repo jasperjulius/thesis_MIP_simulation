@@ -28,7 +28,7 @@ class Warehouse:
             self.stock = self.doc_stock
             self.pending_arrivals = [0, 0, 0, 0, 0, 0]
             self.ds = []
-            self.doc_inv = []
+        self.doc_inv = []
         self.doc_setup_counter = 0
 
     # method for adding retailers
@@ -53,13 +53,13 @@ class Warehouse:
         for number, a in enumerate(amounts):
             self.send_stock(a, number)
 
-    def update_ds(self):
+    def update_D_in_retailers(self):
         ds = self.sum_d_each_retailer()
         for r, d in zip(self.retailers, ds):
             r.D = d
 
     def print_stocks(self, period):
-        print("period: ", period, "warehouse - stock: ", self.stock)
+        print("period: ", period, "warehouse - ip:",self.ip(),", stock: ", self.stock, ", arrivals:",self.pending_arrivals, ", ds:", self.ds)
         for r in self.retailers:
             print(r.number, ", stock: ", r.current_inv, ", ip:", r.ip(), ", pending_arrivals: ", r.pending_arrivals)
 
@@ -79,23 +79,20 @@ class Warehouse:
 
     # sum over ds_timebound; dependent on structure of ds_timebound
 
-    def update_morning(self, period):
-
+    def arrivals_retailers(self, period):
         for r in self.retailers:
-            r.update_morning(period)
+            r.process_arrivals(period)
 
-    def update_self(self):
+    def process_arrivals(self):
         self.stock += self.pending_arrivals[0]
         self.pending_arrivals[0] = 0
+
+    def update_evening(self, period):   # records statistics of I_0, shifts pending arrivals to next period
+        self.doc_inv.append(self.stock)
         self.pending_arrivals.append(0)
         del self.pending_arrivals[:1]
-
-    def update_doc_inv(self):  # to be called after pending arrivals and orders of retailers have been processed
-        self.doc_inv.append(self.stock)
-
-    def update_evening(self):
         for r in self.retailers:
-            r.update_evening()
+            r.update_evening(period)
 
     def ip(self):
         ip = self.stock

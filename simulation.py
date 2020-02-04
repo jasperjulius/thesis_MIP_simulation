@@ -18,7 +18,7 @@ def amount_requested(retailer):
     return amount
 
 
-def amounts_requested(warehouse, i):
+def retailer_orders(warehouse, i):
     a = []
     for r in warehouse.retailers:
         a.append(amount_requested(r))
@@ -62,7 +62,7 @@ class Simulation:
                 random = [i for i in rand.negative_binomial(n, p, length)]
             avg = sum(random) / len(random)
 
-            r = rt.Retailer(i, self.length, seed=seed, demands=random)
+            r = rt.Retailer(i, self.warehouse, self.length, seed=seed, demands=random)
             if high_c_shortage:
                 r.c_shortage = 4.9
             else:
@@ -76,37 +76,44 @@ class Simulation:
 
             if i == self.warm_up:
                 self.reset(warm_up=self.warm_up)
-            self.warehouse.update_morning(i)
-            self.warehouse.update_self()
+            self.warehouse.add_stock(amount_requested(self.warehouse))
+            self.warehouse.process_arrivals()
 
-            initial_amounts = amounts_requested(self.warehouse, i)
+            amounts_requested = retailer_orders(self.warehouse, i)
+            # print("ordered amounts: ", initial_amounts, "\n")
             ds = self.warehouse.get_ds()
             each_retailer_d = self.warehouse.sum_d_each_retailer()
-            total_orders = [i + j for i, j in zip(each_retailer_d, initial_amounts)]
-            total_amount = sum(initial_amounts) + sum(each_retailer_d)
-            amounts_sent = initial_amounts.copy()
+            amounts_plus_backorders = [i + j for i, j in zip(each_retailer_d, amounts_requested)]
             flag = False
 
-            if total_amount > self.warehouse.stock or (FIFO and self.warehouse.sum_ds() > 0) or settings.ignore:  # decision rule time
+            if sum(amounts_plus_backorders) > self.warehouse.stock or (
+                    FIFO and self.warehouse.sum_ds() > 0):  # decision rule time
                 if self.warehouse.stock is not 0:
                     if FIFO:
-                        amounts_sent = self.fifo(ds, initial_amounts, i)  # currently only works for two retailers!
+                        amounts_sent = self.fifo(ds, amounts_requested, i)  # currently only works for two retailers!
+                        self.warehouse.update_D_in_retailers()
                     else:
-
                         flag = True
                         model = mip.MIP()
-                        model.set_params(self.warehouse, total_orders)
+                        model.set_params(self.warehouse, amounts_plus_backorders)
                         amounts_sent = model.optimal_quantities()
-                        self.update_ds_mip(initial_amounts, amounts_sent, ds)
-
                 else:
+                    if FIFO:
+                        # call to fifo() to update ds: adds orders of retailers to list of ds
+                        self.fifo(ds, amounts_requested, i)
+                        self.warehouse.update_D_in_retailers()
                     amounts_sent = [0 for i in range(self.num_retailers)]
 
+            else:
+                amounts_sent = amounts_plus_backorders.copy()
+            if not FIFO:
+                self.update_ds_mip(amounts_requested, amounts_sent, ds)
+                self.warehouse.update_D_in_retailers()
+
             self.warehouse.send_stocks(amounts_sent)
-            self.warehouse.update_ds()
-            self.warehouse.update_doc_inv()
-            self.warehouse.add_stock(amount_requested(self.warehouse))
-            self.warehouse.update_evening()
+            self.warehouse.arrivals_retailers(i)
+            self.warehouse.update_D_in_retailers()
+            self.warehouse.update_evening(i)
 
             if flag:
                 mytimes.add_interval(mip.t2 - mip.t1)
@@ -188,22 +195,23 @@ class Simulation:
             return elem[1]
 
         stock = self.warehouse.stock
+
         qs = [self.warehouse.retailers[i].Q for i in range(2)]
-        ds = _ds
+        ds = _ds  # not .copy(), bc allowed to edit ds
         amounts = _amounts.copy()
 
         send, stock = self.satisfy_ds(stock, ds)
-        self.amounts_pre(stock, amounts)
-        if sum(amounts) == 0:
-            return send
-
+        # self.amounts_pre(stock, amounts)
         ips = []
         j = 0
+
+        # todo: wie kann ip weiter als d unter R liegen? ausgleichende bestellung der letzten periode müsste bei nichterfüllung in backorders enthalten sein, womit man letzte periode wieder über R war
         for r in self.warehouse.retailers:  # todo: das muss nochmal überdacht werden...
-            d = min(1, r.demands[min(0, period - 1)])
+            d = max(1, r.demands[max(0, period - 1)])
             R = r.R
             ip = r.ip()
-            ips.append((j, (d - (R - ip)) / d))
+            position = (j, (d - (R - ip)) / d)
+            ips.append(position)
             j += 1
 
         ips.sort(key=takeSecond)
@@ -215,10 +223,9 @@ class Simulation:
                 max_amount = self.max_amount_possible(amounts[retailer], stock, qs[retailer])
                 send[retailer] += max_amount
                 ds.append([retailer, amounts[retailer] - max_amount])
-
         return send
 
-    def update_ds_mip(self, _amounts_requested, _amounts_sent, ds):  # todo: ds initialization where?
+    def update_ds_mip(self, _amounts_requested, _amounts_sent, ds):
         if not ds:
             ds.append([0, 0])
             ds.append([1, 0])
@@ -229,18 +236,12 @@ class Simulation:
             return max(0, min(a1, a2))
 
         for i in range(2):
-
             a = reduce_by(ds[i][1], amounts_sent[i])
             ds[i][1] -= a
             amounts_sent[i] -= a
 
             if amounts_sent[i] < amounts_requested[i]:
                 ds[i][1] += amounts_requested[i] - amounts_sent[i]
-
-            # erriting okay, set ds to zero, create new ds with difference amount_left_after_satisfying_ds, initial_order
-            # not enuf, reduce ds as far as possible,
-
-        # satisfy outstanding orders, add
 
     def satisfy_ds(self, stock, ds):
         send = [0, 0]
