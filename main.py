@@ -34,11 +34,8 @@ def print_times():
 # fixed order costs gibt's nicht, sondern order setup costs, die beim retailer anfallen fürs bestellen
 #  fragestellung: wie häufig wird er im zeitraum (von t = 0 bis t = 2*L) nochmal bestellen?
 
-# todo: cost calculation: should apply to inventory at the end of the period, basically the same as at the beginning of period before arrivals
-#   done - change doc_inv to after demand
-#   reflect in MIP; estimated inventories should be at end of period
-# todo: back to fixed costs - calculation, MIP
 # todo: was nehmen für holding costs warehouse?
+
 # todo: implement alternative to MIP that utilizes same thought but only with x_i as positive multiple of Q_i
 # todo: viele perioden - gleiche random werte für alle settings
 
@@ -79,11 +76,11 @@ high3 = rgen.R("20k mip high_var mip low_s rad3", (0, 6), (0, 10), (71, 79), 1, 
 # new mip scenarios
 teste1 = rgen.R("new mip - first test", (4, 20), (30, 60), (30, 60), 2, 3, 3, repeat=1, high_c_shortage=True, high_var=False, run_me_as=0)
 teste3 = rgen.R("new mip no splitting - second test", (10, 40), (30, 60), (30, 60), 10, 20, 20, repeat=1, high_c_shortage=True, high_var=False, run_me_as=0)
-teste2 = rgen.R("testing purposes", (10, 50), (30, 60), (30, 60), 20, 5, 5, repeat=1, high_c_shortage=True, high_var=False, run_me_as=2)
+teste2 = rgen.R("testing purposes - mip vs mip", (10, 50), (30, 60), (30, 60), 20, 10, 5, repeat=5, high_c_shortage=True, high_var=False, run_me_as=2)
 
 scenarios = [teste2]
 
-length = 2100
+length = 10100
 warm_up = 100
 lengths = {100: 'short', 1000: 'mid', 10000: 'long'}
 
@@ -124,21 +121,18 @@ for scenario in scenarios:
         if not scenario.fifo:
             pre1 = time.time()
             settings.no_batch_splitting = False
-            settings.combine = True
             sim.run(FIFO=False)
 
             after1 = time.time()
-            print_times()
             results_mip = sim.collect_statistics()
             sim.reset()
             print_results_to_sheet(results_mip, sheet, current[3], 7)
         pre2 = time.time()
 
-        settings.combine = False
-        sim.run(FIFO=True)
+        settings.no_batch_splitting = True
+        sim.run(FIFO=False)
 
         after2 = time.time()
-        print_times()
         results_fifo = sim.collect_statistics()
         sim.reset()
         print_results_to_sheet(results_fifo, sheet, current[3], 18)

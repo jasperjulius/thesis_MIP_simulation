@@ -3,7 +3,8 @@ import mytimes
 import time
 from math import trunc
 import settings
-from combine_graphs import combine
+from combine_graphs import combine_2
+from combine_graphs import transfer_to_Qs
 
 t1 = 0
 t2 = 0
@@ -65,11 +66,10 @@ class MIP:
         for t in range(start,
                        self.p_lead[i] * 2):  # how many periods into future? aktuell: bei L=2 => range(2,4) => 2,3
 
-            x.append(self.p_current_inv[i] + sum(self.p_pending_arrivals[i][:t + 1]) - self.p_av_demand[i] * t)
+            x.append(self.p_current_inv[i] + sum(self.p_pending_arrivals[i][:t + 1]) - self.p_av_demand[i] * (t + 1))
         return x
 
-    def holding_objective(self, X_holding,
-                          i):  # average inventory of retailer i in period t - only for t >= leadtime
+    def holding_objective(self, i):  # only for t >= leadtime
         count = 0
         graph = []
         x = 0
@@ -78,7 +78,7 @@ class MIP:
                        self.p_lead[i] * 2):  # how many periods into future? aktuell: bei L=2 => range(2,4) => 2,3
 
             x = self.p_current_inv[i] + sum(self.p_pending_arrivals[i][:t + 1]) - self.p_av_demand[
-                i] * t  # nimmt inventory am anfang der periode (höhster punkt)
+                i] * (t + 1)  # nimmt inventory am anfang der periode (höhster punkt)
 
             if count == 0:
                 # add initial point on x axis (-M, 0)
@@ -95,17 +95,9 @@ class MIP:
         for i in range(len(graph_out_of_range) - 2):
             del graph[-1]
 
-        # transform tuples into two lists
-        if settings.combine:
-            return graph
+        return graph
 
-        list_x, list_y = map(list, zip(*graph))
-        # scale graph according to holding costs of i
-        list_y = [j * self.p_c_holding[i] for j in list_y]
-        self.model.setPWLObj(X_holding[i], list_x, list_y)
-        return
-
-    def shortage_objective(self, X_shortage, i):
+    def shortage_objective(self, i):
 
         count = 0
         graph = []
@@ -128,165 +120,50 @@ class MIP:
         if not graph or len(graph) < 2:
             graph = [(0, 0), (1, 0)]
 
-        if settings.combine:
-            return graph
+        return graph
 
-        list_x, list_y = map(list, zip(*graph))
-        for j in range(len(list_y)):
-            list_y[j] *= self.p_c_shortage[i]
-        self.model.setPWLObj(X_shortage[i], list_x, list_y)
 
-    # erster wert jeweils für t = 0, also "jetzt"; aktuell wird so gerechnet, als kämen deliveries first thing in the morning an, und sind somit im täglichen inventory zur berechnung der holding/shortage costs mit drin
 
-    def order_setup_objective(self, X_order_setup,
-                              i):  # geht davon aus, dass av_demand ankommt in future periods, könnte auch auf erwartungswert umgestellt werden (ein x resultiert in einer gewissen wahrscheinlichkeit, dass bei gegebener wahrscheinlichkeitsverteilung nächste/übernächste/.. periode wieder bestellt wird; ziemlich kompliziert wahrscheinlich)
-
-        ip = self.ips[i]
-        r = self.r[i]
-        base_x = r - ip
-        av_demand = self.p_av_demand[i]
-        cost = self.p_c_fixed_order[i]
-        graph = []
-        shift_forward = 0
-        if ip > r:
-            shift_forward = trunc((ip - r) / av_demand)
-        length = max(1, 2 * self.p_lead[i]) - shift_forward
-        if length > 0:
-            for j in range(length):  # could be limited by warehouse stock, to reduce num points created
-
-                x = base_x + (j + shift_forward) * av_demand
-                x_follow = x + 1
-                y = max(1, trunc(length / max(1, j)))
-                y_follow = max(1, trunc(length / max(1, j + 1)))
-
-                if j == 0:
-                    graph.append((x - 1, y))
-                if not y == y_follow:
-                    graph.append((x, y))
-                    graph.append((x_follow, y_follow))
-                if j == max(range(length)):
-                    graph.append((x_follow + 1, y_follow))
-
-        else:
-            graph.append((0, 1))
-            graph.append((1, 1))
-            graph.append((2, 1))
-        len_before = len(graph)
-        graph = [g for g in graph if g[0] <= self.p_stock_warehouse and g[0] <= self.max_orders[i]]
-        if graph and len(graph) > 1 and len(graph) < len_before:
-            graph.append((graph[-1][0] + 1, graph[-1][1]))
-        else:
-            graph = []
-            graph.append((0, 0))
-            graph.append((1, 0))
-        if settings.combine:
-            return graph
-
-        list_x, list_y = map(list, zip(*graph))
-        for j in range(len(list_y)):
-            list_y[j] *= cost
-        self.model.setPWLObj(X_order_setup[i], list_x, list_y)
-
-        pass
-        # y.append(freq*self.p_c_fixed_order[i])
 
     def optimal_quantities(self):
 
-        global t1
-        global t2
-        global t3
-        global t4
-        global t5
-        global t6
-        global t7
-        global t8
-
-        t1 = time.time()
         num_i = len(self.p_lead)
-        X_holding = self.model.addVars(num_i, vtype=GRB.INTEGER, name='# sent out')
-
-        X_shortage = None
-        X_order_setup = None
-        if not settings.combine:
-            X_shortage = self.model.addVars(num_i, vtype=GRB.INTEGER, name='# sent out - shortage (helper var) ')
-            X_order_setup = self.model.addVars(num_i, vtype=GRB.INTEGER, name='# sent out - order setup (helper var) ')
-
-        t2 = time.time()
+        X_var = self.model.addVars(num_i, vtype=GRB.INTEGER, name='# sent out')
+        Y_fixed = self.model.addVars(num_i, vtype=GRB.BINARY, name='binary for fixed costs')
 
         for i in range(num_i):
 
-            g1 = self.holding_objective(X_holding, i)
-            g2 = self.shortage_objective(X_shortage, i)
-            g3 = self.order_setup_objective(X_order_setup, i)
-            if i == 0:
-                t3 = time.time()
-            else:
-                t5 = time.time()
+            g1 = self.holding_objective(i)
+            g2 = self.shortage_objective(i)
+            g1_copy = g1.copy()
+            g2_copy = g2.copy()
+            if len(g1) <= 1 or len(g2) <= 1:
+                print("get rekt")
+            if settings.no_batch_splitting:
+                g1 = transfer_to_Qs(g1, self.q[i])
+                g2 = transfer_to_Qs(g2, self.q[i])
+            if len(g1) <= 1 or len(g2) <= 1:
+                print("get rekt")
 
-            if settings.combine:
-                g_combined = combine(g1, self.p_c_holding[i], g2, self.p_c_shortage[i], g3, self.p_c_fixed_order[i])
-                list_x, list_y = map(list, zip(*g_combined))
-                self.model.setPWLObj(X_holding[i], list_x, list_y)
-            if i == 0:
-                t4 = time.time()
-            else:
-                t6 = time.time()
+            g_combined = combine_2(g1, self.p_c_holding[i], g2, self.p_c_shortage[i])
+            if len(g_combined) == 1:
+                g_combined.append((g_combined[-1][0]+1, g_combined[-1][1]))
 
+            list_x, list_y = map(list, zip(*g_combined))
+            self.model.setPWLObj(X_var[i], list_x, list_y)
+            Y_fixed[i].Obj = self.p_c_fixed_order[i]
 
-        if settings.no_batch_splitting:  # todo: die zwei passen - model ummünzen auf x als multiple von q und nicht absolute menge
-            self.model.addConstrs(X_holding[i]*self.q[i] <= self.max_orders[i] for i in X_holding)
-            self.model.addConstr(quicksum(X_holding[i]*self.q[i] for i in X_holding) <= self.p_stock_warehouse)  # ct max capacity at warehouse
-
+        if settings.no_batch_splitting:
+            self.model.addConstrs(X_var[i]*self.q[i] <= self.max_orders[i] for i in X_var)
+            self.model.addConstr(quicksum(X_var[i]*self.q[i] for i in X_var) <= self.p_stock_warehouse)  # ct max capacity at warehouse
         else:
-            self.model.addConstr(quicksum(X_holding[i] for i in X_holding) <= self.p_stock_warehouse)  # ct max capacity at warehouse
-            self.model.addConstrs(X_holding[i] <= self.max_orders[i] for i in X_holding)
+            self.model.addConstr(quicksum(X_var[i] for i in X_var) <= self.p_stock_warehouse)  # ct max capacity at warehouse
+            self.model.addConstrs(X_var[i] <= self.max_orders[i] for i in X_var)
 
-        if not settings.combine:
-            self.model.addConstrs(X_holding[i] == X_shortage[i] for i in X_holding)  # ct(i) hilfsvariable constraint
-            self.model.addConstrs(X_holding[i] == X_order_setup[i] for i in X_holding)  # ct(i) hilfsvariable constraint
-        t7 = time.time()
+        self.model.addConstrs(X_var[i] <= Y_fixed[i]*self.p_stock_warehouse for i in X_var)
         self.model.optimize()
-        t8 = time.time()
-        final = []
-        for i in range(num_i):
-            final.append(int(X_holding.get(i).X))
+
+        final = [int(X_var.get(i).X) for i in range(num_i)]
+        if settings.no_batch_splitting:
+            final = [int(X_var.get(i).X)*self.q[i] for i in range(num_i)]
         return final
-
-
-    def holding_objective_alt(self, X_holding,
-                              i):  # average inventory of retailer i in period t - only for t >= leadtime
-
-        graph = []
-        stocks = []
-        for t in range(self.p_lead[i], self.p_lead[i] * 2 + 1):  # how many periods into future?
-            stocks.append(self.p_current_inv[i] + sum(self.p_pending_arrivals[i][:t + 1]) - self.p_av_demand[i] * t)
-
-        upper_bound = -1 * (stocks[-1] - self.p_av_demand[i]) + 1
-        if upper_bound > self.p_stock_warehouse >= 0:
-            upper_bound = self.p_stock_warehouse
-        if upper_bound <= 0:
-            upper_bound = 1
-
-        for x in range(upper_bound + 1):
-            av_stock = 0
-            for stock in stocks:  # calculate average stock of each period
-                av_stock += self.average(stock + x, self.p_av_demand[i])
-            graph.append((x, av_stock))
-
-        # transform tuples into two lists
-        list_x, list_y = map(list, zip(*graph))
-
-        # scale graph according to holding costs of i
-        list_y = [j * self.p_c_holding[i] for j in list_y]
-
-        # add curve as one connected, but not continuous obj function for variable X[i]
-        self.model.setPWLObj(X_holding[i], list_x, list_y)
-
-    @staticmethod
-    def average(stock, demand):
-        if stock >= demand:
-            return stock - 0.5 * demand
-        elif stock > 0:
-            return float(stock) / 2 * float(stock) / demand
-        elif stock <= 0:
-            return 0

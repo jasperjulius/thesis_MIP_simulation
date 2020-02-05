@@ -13,8 +13,6 @@ def amount_requested(retailer):
     Q = retailer.Q
     ip = retailer.ip()
     amount = max(0, ceil((R - ip) / Q)) * Q
-    if amount > 0:
-        retailer.doc_setup_counter += 1
     return amount
 
 
@@ -84,7 +82,6 @@ class Simulation:
             ds = self.warehouse.get_ds()
             each_retailer_d = self.warehouse.sum_d_each_retailer()
             amounts_plus_backorders = [i + j for i, j in zip(each_retailer_d, amounts_requested)]
-            flag = False
 
             if sum(amounts_plus_backorders) > self.warehouse.stock or (
                     FIFO and self.warehouse.sum_ds() > 0):  # decision rule time
@@ -110,28 +107,10 @@ class Simulation:
                 self.update_ds_mip(amounts_requested, amounts_sent, ds)
                 self.warehouse.update_D_in_retailers()
 
-            self.warehouse.send_stocks(amounts_sent)
+            self.warehouse.send_stocks(amounts_sent)    # includes fixed costs of rt
             self.warehouse.arrivals_retailers(i)
             self.warehouse.update_D_in_retailers()
             self.warehouse.update_evening(i)
-
-            if flag:
-                mytimes.add_interval(mip.t2 - mip.t1)
-                mytimes.add_interval(mip.t3 - mip.t2 + mip.t5 - mip.t4)
-                mytimes.add_interval(mip.t4 - mip.t3 + mip.t6 - mip.t5)
-                mytimes.add_interval(mip.t7 - mip.t6)
-                mytimes.add_interval(mip.t8 - mip.t7)
-            else:
-                mytimes.add_interval(0)
-                mytimes.add_interval(0)
-                mytimes.add_interval(0)
-                mytimes.add_interval(0)
-                mytimes.add_interval(0)
-            if i == 0:
-                mytimes.delete_first()
-            elif (i + 1) % 1000 == 0:
-                mytimes.form_groups()
-            mytimes.next_group()
 
     def collect_statistics(self):
         rt_invs = []
