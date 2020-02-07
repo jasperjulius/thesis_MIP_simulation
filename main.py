@@ -89,7 +89,7 @@ teste3 = rgen.R("testing purposes -para1", (50, 50), (50, 60), (30, 60), 40, 40,
 teste2 = rgen.R("testing purposes - para2", (50, 50), (50, 60), (30, 60), 40, 40, 5, repeat=2,
                 high_c_shortage=True, high_var=False, run_me_as=2)
 
-scenarios = [teste2, teste3]
+scenarios = [teste2]
 
 length = 1010
 warm_up = 10
@@ -107,7 +107,7 @@ def run_scenario(scenario):
         temp_name = 'reeeally long'
 
     wb = openpyxl.load_workbook(
-        '/Users/jasperinho/PycharmProjects/thesis_MIP/generated_sheets/templates/template ' + temp_name + '.xlsx',
+        './generated_sheets/templates/template ' + temp_name + '.xlsx',
         read_only=False)
     sheet = wb[wb.sheetnames[0]]
 
@@ -164,5 +164,5 @@ def run_scenario(scenario):
     sheet["AY12"] = sim.warehouse.retailers[1].c_holding
     sheet["AZ12"] = sim.warehouse.retailers[1].c_shortage
 
-    name = "generated_sheets/multiprocessing/" + str(scenario.number) + ".xlsx"
+    name = "generated_sheets/win/" + str(scenario.number) + ".xlsx"
     wb.save(name)
