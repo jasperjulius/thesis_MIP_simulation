@@ -38,9 +38,6 @@ def print_times():
 # todo: was nehmen für holding costs warehouse?
 # todo: viele perioden - gleiche random werte für alle settings
 
-# todo: parallelize - 12-core
-# todo: run on server
-
 # muss noch rein in meth. IN_t = IN_t-1  + O_t - mu_t
 
 # josef: lead time = 0 auch als case? erstmal nicht wichtig, L=2 ist okay! Q eoq auch gut
@@ -49,50 +46,27 @@ def print_times():
 # rückwärtssuche (für aktuelle papers zum thema): wer zitiert zB. gallego2007?, axsäter
 
 first_row = 4
-
-schwankungen1 = rgen.R("schwankungen 20k mip low var", (15, 15), (40, 40), (40, 40), 4, 4, 4, repeat=20,
-                       high_c_shortage=False, high_var=False, run_me_as=0)
-schwankungen2 = rgen.R("schwankungen 20k mip high var", (25, 40), (40, 40), (40, 40), 15, 5, 5, repeat=30,
-                       high_c_shortage=False, high_var=True, run_me_as=0)
-schwankungen3 = rgen.R("schwankungen 20k mip high var mip", (10, 10), (10, 10), (76, 76), 1, 1, 1, repeat=30,
-                       high_c_shortage=False, high_var=True, run_me_as=0)
-schwankungen4 = rgen.R("20k fifo schwnkungen low", (58, 58), (26, 26), (26, 26), 1, 1, 1, repeat=30,
-                       high_c_shortage=True, high_var=False, run_me_as=0, fifo=True)
-schwankungen5 = rgen.R("20k fifo schwnkungen low - low", (58, 58), (26, 26), (26, 26), 1, 1, 1, repeat=30,
-                       high_c_shortage=False, high_var=False, run_me_as=0, fifo=True)
-
-# low var
-# high ratio
-low1 = rgen.R("20k mip low_var high_s rad3", (0, 10), (0, 15), (65, 80), 2, 3, 3, repeat=1, high_c_shortage=True,
-              high_var=False, run_me_as=0)
-# low_final2 = rgen.R("100k low var fifo ", (55, 61), (23, 29), (23, 29), 1, 1, 1, repeat=1, high_c_shortage=True, high_var=False, run_me_as=0, fifo=True)
-# low ratio
-low3 = rgen.R("20k mip low_var mip low_s rad3", (4, 8), (0, 6), (65, 75), 1, 2, 2, repeat=1, high_c_shortage=False,
-              high_var=False, run_me_as=0)
-# low_final4 = rgen.R("100k low var fifo low ratio", (57, 60), (20, 22), (20, 22), 1, 1, 1, repeat=1, high_c_shortage=False, high_var=False, run_me_as=0, fifo=True)
-
-# high var
-# high ratio
-high1 = rgen.R("20k mip high_var mip high_s rad3", (0, 6), (0, 15), (75, 85), 1, 3, 2, repeat=1, high_c_shortage=True,
-               high_var=True, run_me_as=0)
-# high_final2 = rgen.R("100k high var fifo", (55, 61), (29, 39), (29, 37), 1, 1, 1, repeat=1, high_c_shortage=True, high_var=True, run_me_as=0, fifo=True)
-# low ratio
-high3 = rgen.R("20k mip high_var mip low_s rad3", (0, 6), (0, 10), (71, 79), 1, 3, 2, repeat=1, high_c_shortage=False,
-               high_var=True, run_me_as=0)
-# high_final4 = rgen.R("100k high var fifo - low", (55, 61), (21, 31), (21, 31), 1, 1, 1, repeat=1, high_c_shortage=False, high_var=True, run_me_as=0, fifo=True)
-
+# todo: parallelize each scenario, in one excel in ending
 # new mip scenarios
-teste1 = rgen.R("new mip - first test", (4, 20), (30, 60), (30, 60), 2, 3, 3, repeat=1, high_c_shortage=True,
-                high_var=False, run_me_as=0)
-teste3 = rgen.R("testing purposes -para1", (50, 50), (50, 60), (30, 60), 40, 40, 5, repeat=2,
-                high_c_shortage=True, high_var=False, run_me_as=2)
+teste1 = rgen.R("testing purposes -para1", (10, 60), (20, 60), (20, 60), 40, 40, 5, repeat=1,
+                high_c_shortage=True, high_var=False, run_me_as=0)
 teste2 = rgen.R("testing purposes - para2", (50, 50), (50, 60), (30, 60), 40, 40, 5, repeat=2,
                 high_c_shortage=True, high_var=False, run_me_as=2)
+teste3 = rgen.R("testing purposes -para3", (50, 50), (50, 60), (30, 60), 40, 40, 5, repeat=2,
+                high_c_shortage=True, high_var=False, run_me_as=2)
+teste4 = rgen.R("testing purposes - para4", (50, 50), (50, 60), (30, 60), 40, 40, 5, repeat=2,
+                high_c_shortage=True, high_var=False, run_me_as=2)
+teste5 = rgen.R("testing purposes - para5", (50, 50), (50, 60), (30, 60), 40, 40, 5, repeat=2,
+                high_c_shortage=True, high_var=False, run_me_as=2)
+teste6 = rgen.R("testing purposes - para6", (50, 50), (50, 60), (30, 60), 40, 40, 5, repeat=2,
+                high_c_shortage=True, high_var=False, run_me_as=2)
+teste7 = rgen.R("testing purposes - para7", (50, 50), (50, 60), (30, 60), 40, 40, 5, repeat=2,
+                high_c_shortage=True, high_var=False, run_me_as=2)
 
-scenarios = [teste2]
+scenarios = [teste1, teste2, teste3, teste4, teste5, teste6, teste7]
 
-length = 1010
-warm_up = 10
+length = 20100
+warm_up = 100
 lengths = {100: 'short', 1000: 'mid', 10000: 'long'}
 
 
