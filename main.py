@@ -48,7 +48,7 @@ def print_times():
 first_row = 4
 # todo: parallelize each scenario, in one excel in ending
 # new mip scenarios
-teste1 = rgen.R("testing purposes -para1", (10, 60), (20, 60), (20, 60), 40, 40, 5, repeat=1,
+teste1 = rgen.R("testing purposes -para1", (10, 60), (20, 60), (20, 60), 1, 1, 1, repeat=1,
                 high_c_shortage=True, high_var=False, run_me_as=0)
 teste2 = rgen.R("testing purposes - para2", (50, 50), (50, 60), (30, 60), 40, 40, 5, repeat=2,
                 high_c_shortage=True, high_var=False, run_me_as=2)
@@ -63,9 +63,9 @@ teste6 = rgen.R("testing purposes - para6", (50, 50), (50, 60), (30, 60), 40, 40
 teste7 = rgen.R("testing purposes - para7", (50, 50), (50, 60), (30, 60), 40, 40, 5, repeat=2,
                 high_c_shortage=True, high_var=False, run_me_as=2)
 
-scenarios = [teste1, teste2, teste3, teste4, teste5, teste6, teste7]
+scenarios = [teste1]
 
-length = 20100
+length = 100100
 warm_up = 100
 lengths = {100: 'short', 1000: 'mid', 10000: 'long'}
 
