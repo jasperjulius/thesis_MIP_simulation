@@ -107,7 +107,7 @@ class Simulation:
                 self.update_ds_mip(amounts_requested, amounts_sent, ds)
                 self.warehouse.update_D_in_retailers()
 
-            self.warehouse.send_stocks(amounts_sent)    # includes fixed costs of rt
+            self.warehouse.send_stocks(amounts_sent)  # includes fixed costs of rt
             self.warehouse.arrivals_retailers(i)
             self.warehouse.update_D_in_retailers()
             self.warehouse.update_evening(i)
@@ -190,6 +190,9 @@ class Simulation:
             R = r.R
             ip = r.ip()
             position = (j, (d - (R - ip)) / d)
+            if position[1] < 0:
+                print("fcfs serving order - position too low - position:", position, ", ip: ", ip, "demand: ", d,
+                      ", R:", R)
             ips.append(position)
             j += 1
 
@@ -202,6 +205,7 @@ class Simulation:
                 max_amount = self.max_amount_possible(amounts[retailer], stock, qs[retailer])
                 send[retailer] += max_amount
                 ds.append([retailer, amounts[retailer] - max_amount])
+                stock -= max_amount
         return send
 
     def update_ds_mip(self, _amounts_requested, _amounts_sent, ds):
