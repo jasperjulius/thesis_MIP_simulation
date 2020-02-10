@@ -1,3 +1,7 @@
+import sys
+gurobipath = "C:\gurobi901\win64\python37\lib\gurobipy"
+sys.path.append(gurobipath)
+
 import simulation
 import time
 import openpyxl
@@ -5,7 +9,6 @@ import r as rgen
 from math import trunc
 import mytimes
 import settings
-import multiprocessing as mp
 import shelve
 import multiprocessing as mp
 
@@ -28,14 +31,18 @@ def run_scenario(scen):
     for run in r:
         execute_single_run(run)
 
+def init(l, s):
+    global lock
+    lock = l
+    global scenario
+    scenario = s
 
 def run_scenario_parallel(scen):
-    global scenario
     scenario = scen
-    global lock
     lock = mp.Lock()
+
     r = scenario.get_r()
-    pool = mp.Pool(mp.cpu_count())
+    pool = mp.Pool(mp.cpu_count(), initializer=init, initargs=(lock, scenario))
     pool.map(execute_single_run, r)
 
     def mip(elem):
@@ -54,7 +61,6 @@ def run_scenario_parallel(scen):
 
 def execute_single_run(current):
     global scenario
-    # simulation object needed, next() from iterator needed
     only_fifo = scenario.fifo
     sim = simulation.Simulation(length=scenario.length, warm_up=scenario.warm_up, stock=60,
                                 high_var=scenario.high_var,
@@ -67,6 +73,7 @@ def execute_single_run(current):
     sim.warehouse.R = current[0]
     sim.warehouse.retailers[0].R = current[1]
     sim.warehouse.retailers[1].R = current[2]
+
     if not only_fifo:
         settings.no_batch_splitting = False
         sim.run(FIFO=False)
@@ -90,6 +97,6 @@ def execute_single_run(current):
             db[key] = (value_mip, value_batch, value_fifo)
     lock.release()
 
-
-run_scenario(rgen.R("process0 - diff", 1010, 10, (10, 50), (20, 40), (20, 40), 1, 10, 10, repeat=1,
+if __name__ == '__main__':
+    run_scenario_parallel(rgen.R("process0 - lets go", 10100, 100, (10, 50), (20, 40), (20, 40), 1, 1, 1, repeat=1,
                     high_c_shortage=True, high_var=True, run_me_as=2, demands=None, distribution=None, fifo=False))
