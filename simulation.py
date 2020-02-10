@@ -2,9 +2,6 @@ import MIP as mip
 import retailer as rt
 import warehouse as wh
 import numpy.random as rand
-import mytimes
-import time
-import settings
 from math import ceil
 
 
@@ -53,7 +50,6 @@ class Simulation:
                     p = 0.5
                     self.distribution = binomial(n, p)
                     random = rand.binomial(n, p, length)
-
                 else:
                     n = 20
                     p = 2 / 3

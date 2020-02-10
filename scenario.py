@@ -1,4 +1,4 @@
-class R:
+class Scenario:
 
     def __init__(self, number, length, warm_up, R0, R1, R2, step0, step1, step2, repeat=1, high_var=True,
                  high_c_shortage=True, fifo=False, run_me_as=0, demands=None, distribution=None):
@@ -25,7 +25,7 @@ class R:
         self.duration = len(range(self.R0, self.R0max + 1, self.step0)) * len(
             range(self.R1, self.R1max + 1, self.step1)) * len(range(self.R2, self.R2max + 1, self.step2)) * self.repeat
 
-    def get_r(self):
+    def get_iterator(self):
         if self.run_me_as == 0:
             return self.r()
         if self.run_me_as == 1:

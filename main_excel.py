@@ -1,7 +1,12 @@
+# -------------------------------------------------------------------------------
+# old main, used for executing scenarios, and saving results of each run of scenario to excel
+# replaced by main_shelve
+# -------------------------------------------------------------------------------
+
 import simulation
 import time
 import openpyxl
-import r as rgen
+import scenario as sc
 from math import trunc
 import mytimes
 import settings
@@ -63,7 +68,7 @@ def run_scenario(scenario):
         read_only=False)
     sheet = wb[wb.sheetnames[0]]
 
-    r = scenario.get_r()
+    r = scenario.get_iterator()
     for current in r:
         sim = simulation.Simulation(length=scenario.length, warm_up=scenario.warm_up, stock=60, high_var=scenario.high_var,
                                     high_c_shortage=scenario.high_c_shortage, demands=scenario.demands,
