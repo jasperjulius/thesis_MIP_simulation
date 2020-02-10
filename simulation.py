@@ -37,30 +37,32 @@ def binomial(n, p):
 
 class Simulation:
 
-    def __init__(self, num_retailers=2, length=100, warm_up=None, stock=100, high_var=True, high_c_shortage=True):
+    def __init__(self, num_retailers=2, length=100, warm_up=None, stock=100, high_var=True, high_c_shortage=True, demands=None, distribution=None):
         self.length = length
         self.warehouse = wh.Warehouse(stock=stock)
         self.stats = None
         self.num_retailers = num_retailers
         self.warm_up = warm_up
+        if distribution is not None:
+            self.distribution = distribution
 
         for i in range(num_retailers):
-            seed = rand.randint(0, 10000, 1)[0]
-            # rand.seed(seed)
-            if not high_var:
-                n = 20
-                p = 0.5
-                self.distribution = binomial(n, p)
-                random = rand.binomial(n, p, length)
-                # random = [max(0, int(round(i))) for i in rand.normal(10, 0, length)]    #todo: tryen mit höheren Rs, einfach interesse; params richtig labeln
-            else:
-                n = 20
-                p = 2 / 3
-                self.distribution = neg_binomial(n, p)
-                random = [i for i in rand.negative_binomial(n, p, length)]
-            avg = sum(random) / len(random)
+            if demands is None:
+                if not high_var:
+                    n = 20
+                    p = 0.5
+                    self.distribution = binomial(n, p)
+                    random = rand.binomial(n, p, length)
 
-            r = rt.Retailer(i, self.warehouse, self.length, seed=seed, demands=random)
+                else:
+                    n = 20
+                    p = 2 / 3
+                    self.distribution = neg_binomial(n, p)
+                    random = [i for i in rand.negative_binomial(n, p, length)]
+            else:
+                random = demands
+
+            r = rt.Retailer(i, self.warehouse, self.length, seed=-1, demands=random)
             if high_c_shortage:
                 r.c_shortage = 4.9
             else:
@@ -190,9 +192,10 @@ class Simulation:
             R = r.R
             ip = r.ip()
             position = (j, (d - (R - ip)) / d)
-            if position[1] < 0:
+            if position[1] < 0 and not period == 0:
                 print("fcfs serving order - position too low - position:", position, ", ip: ", ip, "demand: ", d,
                       ", R:", R)
+                print("ip components - pending arrivals: ",r.pending_arrivals, ", IN :", r.current_inv, " backlog D at warehouse:", r.D)
             ips.append(position)
             j += 1
 

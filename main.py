@@ -48,26 +48,24 @@ def print_times():
 first_row = 4
 # todo: parallelize each scenario, in one excel in ending
 # new mip scenarios
-teste1 = rgen.R("testing purposes -para1", (10, 60), (20, 60), (20, 60), 1, 1, 1, repeat=1,
+length = 10100
+warm_up = 100
+teste1 = rgen.R("testing purposes -para1", length, warm_up, (10, 60), (20, 60), (20, 60), 1, 1, 1, repeat=1,
                 high_c_shortage=True, high_var=False, run_me_as=0)
-teste2 = rgen.R("testing purposes - para2", (50, 50), (50, 60), (30, 60), 40, 40, 5, repeat=2,
+teste2 = rgen.R("testing purposes - para2", length, warm_up, (50, 50), (50, 60), (30, 60), 40, 40, 5, repeat=2,
                 high_c_shortage=True, high_var=False, run_me_as=2)
-teste3 = rgen.R("testing purposes -para3", (50, 50), (50, 60), (30, 60), 40, 40, 5, repeat=2,
+teste3 = rgen.R("testing purposes -para3", length, warm_up, (50, 50), (50, 60), (30, 60), 40, 40, 5, repeat=2,
                 high_c_shortage=True, high_var=False, run_me_as=2)
-teste4 = rgen.R("testing purposes - para4", (50, 50), (50, 60), (30, 60), 40, 40, 5, repeat=2,
+teste4 = rgen.R("testing purposes - para4", length, warm_up, (50, 50), (50, 60), (30, 60), 40, 40, 5, repeat=2,
                 high_c_shortage=True, high_var=False, run_me_as=2)
-teste5 = rgen.R("testing purposes - para5", (50, 50), (50, 60), (30, 60), 40, 40, 5, repeat=2,
+teste5 = rgen.R("testing purposes - para5", length, warm_up, (50, 50), (50, 60), (30, 60), 40, 40, 5, repeat=2,
                 high_c_shortage=True, high_var=False, run_me_as=2)
-teste6 = rgen.R("testing purposes - para6", (50, 50), (50, 60), (30, 60), 40, 40, 5, repeat=2,
+teste6 = rgen.R("testing purposes - para6", length, warm_up, (50, 50), (50, 60), (30, 60), 40, 40, 5, repeat=2,
                 high_c_shortage=True, high_var=False, run_me_as=2)
-teste7 = rgen.R("testing purposes - para7", (50, 50), (50, 60), (30, 60), 40, 40, 5, repeat=2,
+teste7 = rgen.R("testing purposes - para7", length, warm_up, (50, 50), (50, 60), (30, 60), 40, 40, 5, repeat=2,
                 high_c_shortage=True, high_var=False, run_me_as=2)
 
 scenarios = [teste1]
-
-length = 100100
-warm_up = 100
-lengths = {100: 'short', 1000: 'mid', 10000: 'long'}
 
 
 def run_scenario(scenario):
@@ -87,8 +85,9 @@ def run_scenario(scenario):
 
     r = scenario.get_r()
     for current in r:
-        sim = simulation.Simulation(length=length, warm_up=warm_up, stock=60, high_var=scenario.high_var,
-                                    high_c_shortage=scenario.high_c_shortage)
+        sim = simulation.Simulation(length=scenario.length, warm_up=scenario.warm_up, stock=60, high_var=scenario.high_var,
+                                    high_c_shortage=scenario.high_c_shortage, demands=scenario.demands,
+                                    distribution=scenario.distribution)
         print(current)
         print(round(((current[3] / scenario.duration) * 100), 2), "%")
 

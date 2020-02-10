@@ -1,5 +1,8 @@
 import time
 import sys
+import numpy.random as rand
+from simulation import binomial
+from simulation import neg_binomial
 
 gurobipath = "C:\gurobi901\win64\python37\lib\gurobipy"
 import multiprocessing as mp
@@ -12,9 +15,10 @@ from main import run_scenario
 scenarios = []
 
 
-def split_scenario(number):
+def split_scenario(number, length, warm_up,  high_var=False, demands=None, distribution=None):
+
     scenarios = []
-    lb = 10
+    lb = 20
     ub = 60
     avg_num_per_s = (ub - lb + 1) / number
 
@@ -26,8 +30,8 @@ def split_scenario(number):
             s_ub = lbs[i + 1] - 1
         else:
             s_ub = ub
-        s = rgen.R("testing purposes - parallel - "+str(i), (lbs[i], s_ub), (20, 60), (20, 60), 1, 1, 1, repeat=1,
-                   high_c_shortage=True, high_var=False, run_me_as=0)
+        s = rgen.R("testing purposes - parallel - " + str(i), length, warm_up, (lbs[i], s_ub), (36, 60), (57, 60), 1, 5, 5, repeat=1,
+                   high_c_shortage=True, high_var=high_var, run_me_as=0, demands=demands, distribution=distribution)
         scenarios.append(s)
     return scenarios
 
@@ -37,12 +41,26 @@ def run_parallel():
     pool = mp.Pool(mp.cpu_count())
     time1 = time.time()
     pool.map(run_scenario, split_scenario(mp.cpu_count()))
-    print("done alle - time needed: ", time.time()-time1)
+    print("done alle - time needed: ", time.time() - time1)
     pool.close()
 
+# todo: run_sequential works with injecting list of demands. same for run_parallel
+def run_sequential(length, warm_up, same_demands=False, high_var=False):
+    distribution = None
+    random = None
+    if same_demands:
+        if not high_var:
+            n = 20
+            p = 0.5
+            distribution = binomial(n, p)
+            random = rand.binomial(n, p, length)
+        else:
+            n = 20
+            p = 2 / 3
+            distribution = neg_binomial(n, p)
+            random = [i for i in rand.negative_binomial(n, p, length)]
 
-def run_sequential():
-    for s in scenarios:
+    for s in split_scenario(8, length, warm_up, high_var=high_var, demands=random, distribution=distribution):
         s.number = s.number + "_seq"
         run_scenario(s)
 
@@ -65,4 +83,4 @@ def time_comp():
 
 
 if __name__ == '__main__':
-    run_parallel()
+    run_sequential(10100, 100, same_demands=True)

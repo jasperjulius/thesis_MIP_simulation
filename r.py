@@ -1,7 +1,12 @@
 class R:
 
-    def __init__(self, number, R0, R1, R2, step0, step1, step2, repeat=1, high_var=True,
-                 high_c_shortage=True, fifo=False, run_me_as=0):
+    def __init__(self, number, length, warm_up, R0, R1, R2, step0, step1, step2, repeat=1, high_var=True,
+                 high_c_shortage=True, fifo=False, run_me_as=0, demands=None, distribution=None):
+        self.length = length
+        self.warm_up = warm_up
+        self.demands = demands
+        self.distribution = distribution
+
         self.fifo = fifo
         self.run_me_as = run_me_as
         self.number = number
