@@ -1,6 +1,6 @@
 # -------------------------------------------------------------------------------
-# old main, used for executing scenarios, and saving results of each run of scenario to excel
-# replaced by main_shelve
+# main in use, saves data to database that is automatically created with name of scenario - one db for each scenario
+# can be run sequentially or in parallel (only available on windows due to MacOS constraint on multiple processes)
 # -------------------------------------------------------------------------------
 
 
@@ -9,6 +9,7 @@ import sys
 gurobipath = "C:\gurobi901\win64\python37\lib\gurobipy"
 sys.path.append(gurobipath)
 
+import time
 import simulation
 import scenario as sc
 import settings
@@ -53,19 +54,6 @@ def run_scenario_parallel(scen):
     pool = mp.Pool(mp.cpu_count(), initializer=init, initargs=(lock, scenario))
     pool.map(execute_single_run, r)
 
-    def mip(elem):
-        return elem[1][0]
-
-    db = shelve.open(scenario.number)
-    list = []
-    for k in db.keys():
-        list.append((k, db[k]))
-    list.sort(key=mip)
-    for i in list:
-        print(i)
-    pass
-    db.close()
-
 
 def execute_single_run(current):
 
@@ -87,18 +75,18 @@ def execute_single_run(current):
         # mip
         settings.no_batch_splitting = False
         sim.run(FIFO=False)
-        value_mip = total_costs(sim.collect_statistics())
+        value_mip = round(total_costs(sim.collect_statistics()), 2)
         sim.reset()
 
         # mip - no batch splitting
         settings.no_batch_splitting = True
         sim.run(FIFO=False)
-        value_batch = total_costs(sim.collect_statistics())
+        value_batch = round(total_costs(sim.collect_statistics()), 2)
         sim.reset()
 
     # fifo
     sim.run(FIFO=True)
-    value_fifo = total_costs(sim.collect_statistics())
+    value_fifo = round(total_costs(sim.collect_statistics()), 2)
     sim.reset()
 
     # save result of run into database
@@ -134,9 +122,21 @@ if __name__ == '__main__':
     periods = 10000
     warm_up = 100
     high_var = True
+    name = "process0 - lets go"
     demands, distribution = generate_demands(periods + warm_up, high_var)
     # todo: define scenarios to run here - different name for each scenario
-    run_scenario_sequential(
-        sc.Scenario("process0 - lets go", periods, warm_up, (10, 50), (20, 40), (20, 40), 1, 1, 1, repeat=1,
-                    high_c_shortage=True, high_var=True, run_me_as=2, demands=demands,
-                    distribution=distribution, fifo=False))
+    scenario = sc.Scenario(name, periods, warm_up, (10, 60), (20, 60), (20, 60), 1, 1, 1, repeat=1,
+                high_c_shortage=True, high_var=True, run_me_as=2, demands=demands,
+                distribution=distribution, fifo=False)
+    before = time.time()
+    run_scenario_parallel(scenario)
+    after = time.time()
+    db = shelve.open(name+" - header")
+    db["name"] = name
+    db["periods"] = periods
+    db["warm up"] = warm_up
+    db["high var"] = high_var
+    db["high c ratio"] = scenario.high_c_shortage
+    db["distibution"] = distribution
+    db["runtime hours"] = after - before
+    db.close()
