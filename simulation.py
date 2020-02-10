@@ -60,7 +60,7 @@ class Simulation:
                     self.distribution = neg_binomial(n, p)
                     random = [i for i in rand.negative_binomial(n, p, length)]
             else:
-                random = demands
+                random = demands[i]
 
             r = rt.Retailer(i, self.warehouse, self.length, seed=-1, demands=random)
             if high_c_shortage:

@@ -47,26 +47,6 @@ def print_times():
 
 first_row = 4
 # todo: parallelize each scenario, in one excel in ending
-# new mip scenarios
-length = 10100
-warm_up = 100
-teste1 = rgen.R("testing purposes -para1", length, warm_up, (10, 60), (20, 60), (20, 60), 1, 1, 1, repeat=1,
-                high_c_shortage=True, high_var=False, run_me_as=0)
-teste2 = rgen.R("testing purposes - para2", length, warm_up, (50, 50), (50, 60), (30, 60), 40, 40, 5, repeat=2,
-                high_c_shortage=True, high_var=False, run_me_as=2)
-teste3 = rgen.R("testing purposes -para3", length, warm_up, (50, 50), (50, 60), (30, 60), 40, 40, 5, repeat=2,
-                high_c_shortage=True, high_var=False, run_me_as=2)
-teste4 = rgen.R("testing purposes - para4", length, warm_up, (50, 50), (50, 60), (30, 60), 40, 40, 5, repeat=2,
-                high_c_shortage=True, high_var=False, run_me_as=2)
-teste5 = rgen.R("testing purposes - para5", length, warm_up, (50, 50), (50, 60), (30, 60), 40, 40, 5, repeat=2,
-                high_c_shortage=True, high_var=False, run_me_as=2)
-teste6 = rgen.R("testing purposes - para6", length, warm_up, (50, 50), (50, 60), (30, 60), 40, 40, 5, repeat=2,
-                high_c_shortage=True, high_var=False, run_me_as=2)
-teste7 = rgen.R("testing purposes - para7", length, warm_up, (50, 50), (50, 60), (30, 60), 40, 40, 5, repeat=2,
-                high_c_shortage=True, high_var=False, run_me_as=2)
-
-scenarios = [teste1]
-
 
 def run_scenario(scenario):
     if scenario.duration < 100:
@@ -125,7 +105,7 @@ def run_scenario(scenario):
         sheet["F%d" % (first_row + current[3])] = after2 - pre2
         sheet["G%d" % (first_row + current[3])] = after3 - pre3
 
-    sheet["AW4"] = length - warm_up
+    sheet["AW4"] = scenario.length - scenario.warm_up
     sheet["AW8"] = sim.distribution[0]
     sheet["AX8"] = sim.distribution[1]
     sheet["AY8"] = float(sim.distribution[2])
@@ -137,5 +117,5 @@ def run_scenario(scenario):
     sheet["AY12"] = sim.warehouse.retailers[1].c_holding
     sheet["AZ12"] = sim.warehouse.retailers[1].c_shortage
 
-    name = "generated_sheets/win/" + str(scenario.number) + ".xlsx"
+    name = "generated_sheets/" + str(scenario.number) + ".xlsx"
     wb.save(name)
