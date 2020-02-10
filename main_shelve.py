@@ -9,6 +9,7 @@ import multiprocessing as mp
 import shelve
 import multiprocessing as mp
 
+
 def total_costs(total_sep):
     total = 0
     for i in total_sep:
@@ -19,12 +20,14 @@ def total_costs(total_sep):
 scenario = None
 lock = None
 
+
 def run_scenario(scen):
     global scenario
     scenario = scen
     r = scenario.get_r()
     for run in r:
         execute_single_run(run)
+
 
 def run_scenario_parallel(scen):
     global scenario
@@ -47,6 +50,7 @@ def run_scenario_parallel(scen):
         print(i)
     pass
     db.close()
+
 
 def execute_single_run(current):
     global scenario
@@ -87,3 +91,5 @@ def execute_single_run(current):
     lock.release()
 
 
+run_scenario(rgen.R("process0 - diff", 1010, 10, (10, 50), (20, 40), (20, 40), 1, 10, 10, repeat=1,
+                    high_c_shortage=True, high_var=True, run_me_as=2, demands=None, distribution=None, fifo=False))
