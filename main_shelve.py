@@ -132,9 +132,6 @@ if __name__ == '__main__':
     scenario = sc.Scenario(name, periods, warm_up, (10, 60), (20, 60), (20, 60), 1, 1, 1, repeat=1,
                 high_c_shortage=True, high_var=True, run_me_as=2, demands=demands,
                 distribution=distribution, fifo=False)
-    scenario = sc.Scenario(name, periods, warm_up, (47, 60), (53, 60), (53, 60), 1, 1, 1, repeat=1,
-                high_c_shortage=True, high_var=True, run_me_as=2, demands=demands,
-                distribution=distribution, fifo=False)
 
     before = time.time()
     run_scenario_sequential(scenario)
