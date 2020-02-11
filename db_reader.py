@@ -6,6 +6,7 @@ name_header = name +" - header"
 db_header = shelve.open(name_header)
 for i in db_header.keys():
     print(i, db_header[i])
+periods = db_header["periods"]
 db_header.close()
 
 db_data = shelve.open(name)
@@ -30,4 +31,4 @@ for i in list:
 db_data.close()
 
 print(min(list, key=mip), min(list, key=batch), min(list, key=fifo))
-print("MIN: ", round(mip(min(list, key=mip))/10000, 2), round(batch(min(list, key=batch))/10000, 2), round(fifo(min(list, key=fifo))/10000, 2))
+print("MIN: ", round(mip(min(list, key=mip))/periods, 2), round(batch(min(list, key=batch))/periods, 2), round(fifo(min(list, key=fifo))/periods, 2))

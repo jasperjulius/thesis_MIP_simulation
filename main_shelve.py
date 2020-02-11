@@ -134,7 +134,7 @@ if __name__ == '__main__':
                 distribution=distribution, fifo=False)
 
     before = time.time()
-    run_scenario_sequential(scenario)
+    run_scenario_parallel(scenario)
     after = time.time()
     db = shelve.open(name+" - header")
     db["name"] = name
