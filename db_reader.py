@@ -21,11 +21,13 @@ def batch(elem):
 def fifo(elem):
     return elem[1][2]
 
+def key(elem):
+    return elem[0]
 list = []
 for k in db_data.keys():
     list.append((k, db_data[k]))
 
-list.sort(key=mip)
+list.sort(key=lambda x: x[0])
 for i in list:
     print(i)
 db_data.close()

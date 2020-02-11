@@ -125,12 +125,12 @@ def generate_demands(periods, high_var):
 if __name__ == '__main__':
     periods = 10000
     warm_up = 100
-    high_var = True
-    name = "process0 - lets go"
+    high_var = False
+    name = "process0 - low var"
     demands, distribution = generate_demands(periods + warm_up, high_var)
     # todo: define scenarios to run here - different name for each scenario
     scenario = sc.Scenario(name, periods, warm_up, (10, 60), (20, 60), (20, 60), 1, 1, 1, repeat=1,
-                high_c_shortage=True, high_var=True, run_me_as=2, demands=demands,
+                high_c_shortage=True, high_var=high_var, run_me_as=2, demands=demands,
                 distribution=distribution, fifo=False)
 
     before = time.time()
@@ -142,6 +142,6 @@ if __name__ == '__main__':
     db["warm up"] = warm_up
     db["high var"] = high_var
     db["high c ratio"] = scenario.high_c_shortage
-    db["distibution"] = distribution
+    db["distribution"] = distribution
     db["runtime hours"] = round((after - before)/3600, 3)
     db.close()
