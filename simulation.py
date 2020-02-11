@@ -21,8 +21,8 @@ def retailer_orders(warehouse, i):
 
 
 def neg_binomial(n, p):
-    mu = n * (1 - p) / p
-    var = n * (1 - p) / p ** 2
+    mu = round(n * (1 - p) / p, 3)
+    var = round(n * (1 - p) / p ** 2, 3)
     return ["neg bin:", n, p, mu, var]
 
 

@@ -108,13 +108,17 @@ def generate_demands(periods, high_var):
         p = 0.5
         distribution = binomial(n, p)
         for i in range(2):
-            random.append(rand.binomial(n, p, periods))
+            demand = rand.binomial(n, p, periods)
+            print(sum(demand)/len(demand))
+            random.append(demand)
     else:
         n = 20
         p = 2 / 3
         distribution = neg_binomial(n, p)
         for i in range(2):
-            random.append(rand.binomial(n, p, periods))
+            demand = rand.negative_binomial(n, p, periods)
+            print(sum(demand) / len(demand))
+            random.append(demand)
     return random, distribution
 
 
@@ -128,8 +132,12 @@ if __name__ == '__main__':
     scenario = sc.Scenario(name, periods, warm_up, (10, 60), (20, 60), (20, 60), 1, 1, 1, repeat=1,
                 high_c_shortage=True, high_var=True, run_me_as=2, demands=demands,
                 distribution=distribution, fifo=False)
+    scenario = sc.Scenario(name, periods, warm_up, (47, 60), (53, 60), (53, 60), 1, 1, 1, repeat=1,
+                high_c_shortage=True, high_var=True, run_me_as=2, demands=demands,
+                distribution=distribution, fifo=False)
+
     before = time.time()
-    run_scenario_parallel(scenario)
+    run_scenario_sequential(scenario)
     after = time.time()
     db = shelve.open(name+" - header")
     db["name"] = name
