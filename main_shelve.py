@@ -143,5 +143,5 @@ if __name__ == '__main__':
     db["high var"] = high_var
     db["high c ratio"] = scenario.high_c_shortage
     db["distibution"] = distribution
-    db["runtime hours"] = after - before
+    db["runtime hours"] = round((after - before)/3600, 3)
     db.close()
