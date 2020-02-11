@@ -56,7 +56,6 @@ def run_scenario_parallel(scen):
 
 
 def execute_single_run(current):
-
     global scenario
     only_fifo = scenario.fifo
     sim = simulation.Simulation(length=scenario.length, warm_up=scenario.warm_up, stock=60,
@@ -96,7 +95,9 @@ def execute_single_run(current):
         if only_fifo:
             db[key] = (value_fifo,)
         else:
-            db[key] = (value_mip, value_batch, value_fifo)
+            value = (value_mip, value_batch, value_fifo)
+            print("key:", key, ", value:", value)
+            db[key] = value
     if parallel:
         lock.release()
 
@@ -109,7 +110,7 @@ def generate_demands(periods, high_var):
         dist = binomial(n, p)
         for i in range(2):
             demand = rand.binomial(n, p, periods)
-            print(sum(demand)/len(demand))
+            print(sum(demand) / len(demand))
             random.append(demand)
     else:
         n = 20
@@ -123,29 +124,32 @@ def generate_demands(periods, high_var):
 
 
 if __name__ == '__main__':
-    periods = 10000
-    warm_up = 100
+    periods = 1000
+    warm_up = 10
     high_var = True
     name = "process0 - fixed demands"
     demands, distribution = generate_demands(periods + warm_up, high_var)
+    demands_low, distribution_low = generate_demands(periods + warm_up, high_var)
     # todo: define scenarios to run here - different name for each scenario
-    s = sc.Scenario("process0 - fixed demands", periods, warm_up, (20, 60), (20, 60), (20, 60), 2, 2, 2, repeat=1,
-                high_c_shortage=True, high_var=True, run_me_as=2, demands=demands,
-                distribution=distribution, fifo=False)
-    s1 = sc.Scenario("process0 - different demands", periods, warm_up, (20, 60), (20, 60), (20, 60), 2, 2, 2, repeat=1,
-                high_c_shortage=True, high_var=True, run_me_as=2, demands=None,
-                distribution=None, fifo=False)
+    r1, r2, r3 = (60, 60), (25, 25), (25, 25)
+    s = sc.Scenario("process0 - fixed demands", periods, warm_up, r1, r2, r3, 20, 20, 2, repeat=1,
+                    high_c_shortage=True, high_var=True, run_me_as=2, demands=demands,
+                    distribution=distribution, fifo=False)
+    s1 = sc.Scenario("process0 - different demands", periods, warm_up, r1, r2, r3, 20, 20, 2,
+                     repeat=1,
+                     high_c_shortage=True, high_var=False, run_me_as=2, demands=demands_low,
+                     distribution=distribution_low, fifo=False)
     scenarios = [s, s1]
-    before = time.time()
     for scenario in scenarios:
-        run_scenario_parallel(scenario)
-    after = time.time()
-    db = shelve.open(name+" - header")
-    db["name"] = name
-    db["periods"] = periods
-    db["warm up"] = warm_up
-    db["high var"] = high_var
-    db["high c ratio"] = scenario.high_c_shortage
-    db["distibution"] = distribution
-    db["runtime hours"] = round((after - before)/3600, 3)
-    db.close()
+        before = time.time()
+        run_scenario_sequential(scenario)
+        after = time.time()
+        db = shelve.open(name + " - header")
+        db["name"] = name
+        db["periods"] = periods
+        db["warm up"] = warm_up
+        db["high var"] = high_var
+        db["high c ratio"] = scenario.high_c_shortage
+        db["distribution"] = distribution
+        db["runtime hours"] = round((after - before) / 3600, 3)
+        db.close()
