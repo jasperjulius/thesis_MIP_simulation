@@ -1,6 +1,6 @@
 import shelve
 
-name = "process0 - lets go"
+name = "process0 - low var"
 name_header = name +" - header"
 
 db_header = shelve.open(name_header)
@@ -21,10 +21,20 @@ def batch(elem):
 def fifo(elem):
     return elem[1][2]
 
+def key(elem):
+    return elem[0]
+
+def value(elem):
+    return elem[1]
+
+def group(list):
+    result = []
+
 list = []
 for k in db_data.keys():
     list.append((k, db_data[k]))
 
+list.sort(key=lambda x: x[0])
 list.sort(key=mip)
 for i in list:
     print(i)

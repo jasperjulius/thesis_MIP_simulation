@@ -56,6 +56,7 @@ def run_scenario_parallel(scen):
 
 
 def execute_single_run(current):
+
     global scenario
     only_fifo = scenario.fifo
     sim = simulation.Simulation(length=scenario.length, warm_up=scenario.warm_up, stock=60,
