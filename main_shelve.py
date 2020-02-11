@@ -129,23 +129,23 @@ if __name__ == '__main__':
     name = "process0 - fixed demands"
     demands, distribution = generate_demands(periods + warm_up, high_var)
     # todo: define scenarios to run here - different name for each scenario
-    s = sc.Scenario("process0 - fixed demands", periods, warm_up, (20, 60), (20, 60), (20, 60), 2, 2, 2, repeat=1,
+    s = sc.Scenario("process0 - same demands", periods, warm_up, (20, 60), (20, 60), (20, 60), 2, 2, 2, repeat=1,
                 high_c_shortage=True, high_var=True, run_me_as=2, demands=demands,
                 distribution=distribution, fifo=False)
     s1 = sc.Scenario("process0 - different demands", periods, warm_up, (20, 60), (20, 60), (20, 60), 2, 2, 2, repeat=1,
                 high_c_shortage=True, high_var=True, run_me_as=2, demands=None,
                 distribution=None, fifo=False)
     scenarios = [s, s1]
-    before = time.time()
     for scenario in scenarios:
+        before = time.time()
         run_scenario_parallel(scenario)
-    after = time.time()
-    db = shelve.open(name+" - header")
-    db["name"] = name
-    db["periods"] = periods
-    db["warm up"] = warm_up
-    db["high var"] = high_var
-    db["high c ratio"] = scenario.high_c_shortage
-    db["distribution"] = distribution
-    db["runtime hours"] = round((after - before)/3600, 3)
-    db.close()
+        after = time.time()
+        db = shelve.open(name+" - header")
+        db["name"] = name
+        db["periods"] = periods
+        db["warm up"] = warm_up
+        db["high var"] = high_var
+        db["high c ratio"] = scenario.high_c_shortage
+        db["distribution"] = distribution
+        db["runtime hours"] = round((after - before)/3600, 3)
+        db.close()
