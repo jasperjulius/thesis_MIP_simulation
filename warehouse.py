@@ -46,12 +46,12 @@ class Warehouse:
             self.doc_setup_counter += 1
 
     # send stock from wh to all rts - amounts: list, eg: [15, 0]
-    def send_stocks(self, amounts):
+    def send_stocks(self, amounts, period):
         for number, a in enumerate(amounts):
-            self.send_stock(a, number)
+            self.send_stock(a, number, period)
 
     # method for sending stock to a single retailer; increases fixed costs of respective rt - amount: int
-    def send_stock(self, amount, number_retailer):
+    def send_stock(self, amount, number_retailer, period):
         if self.stock < amount and 0 < amount:
             raise Exception("aborting - trying to send more than Warehouse has - amount: ", amount, ", stock:",
                             self.stock)
@@ -59,7 +59,7 @@ class Warehouse:
         if amount > 0:
             r.doc_setup_counter += 1
         self.stock -= amount
-        r.add_stock(amount)
+        r.add_stock(amount, period)
 
     # returns ds, which are backorders at warehouse, organized by for which retailer they are
     #   in mip, they are always two entries, one for total backorders of rt 0, one for total backorders of rt 1 - eg: [[0, 45], [0, 30]]

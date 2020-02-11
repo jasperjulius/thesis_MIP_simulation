@@ -122,12 +122,12 @@ def run_scenario(scenario):
 
 
 if __name__ == '__main__':
-    periods = 10000
+    periods = 100000
     warm_up = 100
     high_var = True
-    name = "process0 - lets go"
+    name = "how long"
     demands, distribution = generate_demands(periods + warm_up, high_var)
-    scenario = sc.Scenario(name, periods, warm_up, (10, 60), (20, 60), (20, 60), 20, 20, 1, repeat=1,
+    scenario = sc.Scenario(name, periods, warm_up, (0, 60), (10, 60), (10, 60), 15, 50, 1, repeat=1,
                            high_c_shortage=True, high_var=high_var, run_me_as=2, demands=None,
                            distribution=None, fifo=False)
     run_scenario(scenario)

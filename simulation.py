@@ -9,7 +9,7 @@ def amount_requested(retailer):
     R = retailer.R
     Q = retailer.Q
     ip = retailer.ip()
-    amount = max(0, ceil((R - ip) / Q)) * Q
+    amount = max(0, ceil((R - (ip - 1)) / Q)) * Q   # ip-1, damit bei r >= ip  bestellt wird, und nicht erst bei r>ip
     return amount
 
 
@@ -104,7 +104,7 @@ class Simulation:
                 self.update_ds_mip(amounts_requested, amounts_sent, ds)
                 self.warehouse.update_D_in_retailers()
 
-            self.warehouse.send_stocks(amounts_sent)  # includes fixed costs of rt
+            self.warehouse.send_stocks(amounts_sent, i)  # includes fixed costs of rt
             self.warehouse.arrivals_retailers(i)
             self.warehouse.update_D_in_retailers()
             self.warehouse.update_evening(i)

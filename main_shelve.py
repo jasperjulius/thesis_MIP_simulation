@@ -125,32 +125,29 @@ def generate_demands(periods, high_var):
 
 
 if __name__ == '__main__':
-    periods = 1000
-    warm_up = 10
-    high_var = True
-    name = "test db"
-    demands, distribution = generate_demands(periods + warm_up, high_var)
-    demands_low, distribution_low = generate_demands(periods + warm_up, high_var)
+
+    periods = 10000
+    warm_up = 100
+    demands_high, distribution_high = generate_demands(periods + warm_up, True)
+    demands_low, distribution_low = generate_demands(periods + warm_up, False)
+
     # todo: define scenarios to run here - different name for each scenario
-    r1, r2, r3 = (50, 60), (25, 26), (25, 26)
-    s = sc.Scenario("test db", periods, warm_up, r1, r2, r3, 1, 1, 1, repeat=1,
-                    high_c_shortage=True, high_var=True, run_me_as=2, demands=demands,
-                    distribution=distribution, fifo=False)
-    s1 = sc.Scenario("process0 - different demands", periods, warm_up, r1, r2, r3, 20, 20, 2,
-                     repeat=1,
-                     high_c_shortage=True, high_var=False, run_me_as=2, demands=demands_low,
-                     distribution=distribution_low, fifo=False)
+    r1, r2, r3 = (0, 60), (20, 60), (20, 60)
+    s = sc.Scenario("r0 in steps", periods, warm_up, r1, r2, r3, 15, 1, 1, repeat=1,
+                    high_c_shortage=True, high_var=True, run_me_as=0, demands=demands_high,
+                    distribution=distribution_high, fifo=False)
+
     scenarios = [s]
     for scenario in scenarios:
         before = time.time()
-        run_scenario_sequential(scenario)
+        run_scenario_parallel(scenario)
         after = time.time()
-        db = shelve.open(name + " - header")
-        db["name"] = name
+        db = shelve.open(scenario.number + " - header")
+        db["name"] = scenario.number
         db["periods"] = periods
         db["warm up"] = warm_up
-        db["high var"] = high_var
+        db["high var"] = scenario.high_var
         db["high c ratio"] = scenario.high_c_shortage
-        db["distribution"] = distribution
+        db["distribution"] = scenario.distribution
         db["runtime hours"] = round((after - before) / 3600, 3)
         db.close()

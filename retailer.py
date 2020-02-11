@@ -20,6 +20,8 @@ class Retailer:
         self.R = R  #
         self.Q = ceil((2 * av_demand * c_fixed_order / c_holding) ** 0.5)  #
         self.doc_setup_counter = 0
+        self.doc_pending_arrivals = self.construct_pending()
+
         self.D = 0
         self.demands = []
         self.period = 0
@@ -35,6 +37,7 @@ class Retailer:
             self.current_inv = self.doc_stock
             self.D = 0
             self.pending_arrivals = self.construct_pending()
+            self.doc_pending_arrivals = self.construct_pending()
         self.doc_inv = []
         self.doc_setup_counter = 0
 
@@ -46,6 +49,8 @@ class Retailer:
     def update_evening(self, period):   # lets period pass by processing occurring demand, appending documentation of IN_i, shifting outstanding delivieries to next period
         self.current_inv -= self.demands[period]
         self.pending_arrivals.append(0)
+        self.doc_pending_arrivals.append(0)
+
         del self.pending_arrivals[:1]
         self.doc_inv.append(self.current_inv)
 
@@ -53,8 +58,9 @@ class Retailer:
     def determine_ordered_quantity(self):  # currently done in simulation: amount_requested
         pass
 
-    def add_stock(self, amount):
+    def add_stock(self, amount, period):
         self.pending_arrivals[self.lead] = amount
+        self.doc_pending_arrivals[period + self.lead] = amount
 
     def construct_pending(self):
         pending = [0]
