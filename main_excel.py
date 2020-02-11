@@ -11,6 +11,7 @@ from math import trunc
 import mytimes
 import settings
 import multiprocessing as mp
+from main_shelve import generate_demands
 
 
 def print_results_to_sheet(results, sheet, offset_row, start_column):
@@ -35,13 +36,7 @@ def print_times():
     print("\n")
 
 
-# schwankungen behoben, jetzt ist FIFO besser als MIP...
-
-# fixed order costs gibt's nicht, sondern order setup costs, die beim retailer anfallen fürs bestellen
-#  fragestellung: wie häufig wird er im zeitraum (von t = 0 bis t = 2*L) nochmal bestellen?
-
 # todo: was nehmen für holding costs warehouse?
-# todo: viele perioden - gleiche random werte für alle settings
 
 # muss noch rein in meth. IN_t = IN_t-1  + O_t - mu_t
 
@@ -51,7 +46,6 @@ def print_times():
 # rückwärtssuche (für aktuelle papers zum thema): wer zitiert zB. gallego2007?, axsäter
 
 first_row = 4
-# todo: parallelize each scenario, in one excel in ending
 
 def run_scenario(scenario):
     if scenario.duration < 100:
@@ -70,7 +64,8 @@ def run_scenario(scenario):
 
     r = scenario.get_iterator()
     for current in r:
-        sim = simulation.Simulation(length=scenario.length, warm_up=scenario.warm_up, stock=60, high_var=scenario.high_var,
+        sim = simulation.Simulation(length=scenario.length, warm_up=scenario.warm_up, stock=60,
+                                    high_var=scenario.high_var,
                                     high_c_shortage=scenario.high_c_shortage, demands=scenario.demands,
                                     distribution=scenario.distribution)
         print(current)
@@ -124,3 +119,15 @@ def run_scenario(scenario):
 
     name = "generated_sheets/" + str(scenario.number) + ".xlsx"
     wb.save(name)
+
+
+if __name__ == '__main__':
+    periods = 10000
+    warm_up = 100
+    high_var = True
+    name = "process0 - lets go"
+    demands, distribution = generate_demands(periods + warm_up, high_var)
+    scenario = sc.Scenario(name, periods, warm_up, (10, 60), (20, 60), (20, 60), 20, 20, 1, repeat=1,
+                           high_c_shortage=True, high_var=high_var, run_me_as=2, demands=None,
+                           distribution=None, fifo=False)
+    run_scenario(scenario)

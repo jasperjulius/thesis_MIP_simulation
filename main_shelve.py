@@ -106,7 +106,7 @@ def generate_demands(periods, high_var):
     if not high_var:
         n = 20
         p = 0.5
-        distribution = binomial(n, p)
+        dist = binomial(n, p)
         for i in range(2):
             demand = rand.binomial(n, p, periods)
             print(sum(demand)/len(demand))
@@ -114,27 +114,31 @@ def generate_demands(periods, high_var):
     else:
         n = 20
         p = 2 / 3
-        distribution = neg_binomial(n, p)
+        dist = neg_binomial(n, p)
         for i in range(2):
             demand = rand.negative_binomial(n, p, periods)
             print(sum(demand) / len(demand))
             random.append(demand)
-    return random, distribution
+    return random, dist
 
 
 if __name__ == '__main__':
     periods = 10000
     warm_up = 100
-    high_var = False
-    name = "process0 - low var"
+    high_var = True
+    name = "process0 - fixed demands"
     demands, distribution = generate_demands(periods + warm_up, high_var)
     # todo: define scenarios to run here - different name for each scenario
-    scenario = sc.Scenario(name, periods, warm_up, (10, 60), (20, 60), (20, 60), 1, 1, 1, repeat=1,
-                high_c_shortage=True, high_var=high_var, run_me_as=2, demands=demands,
+    s = sc.Scenario("process0 - fixed demands", periods, warm_up, (20, 60), (20, 60), (20, 60), 2, 2, 2, repeat=1,
+                high_c_shortage=True, high_var=True, run_me_as=2, demands=demands,
                 distribution=distribution, fifo=False)
-
+    s1 = sc.Scenario("process0 - different demands", periods, warm_up, (20, 60), (20, 60), (20, 60), 2, 2, 2, repeat=1,
+                high_c_shortage=True, high_var=True, run_me_as=2, demands=None,
+                distribution=None, fifo=False)
+    scenarios = [s, s1]
     before = time.time()
-    run_scenario_parallel(scenario)
+    for scenario in scenarios:
+        run_scenario_parallel(scenario)
     after = time.time()
     db = shelve.open(name+" - header")
     db["name"] = name

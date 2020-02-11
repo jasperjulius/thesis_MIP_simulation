@@ -88,7 +88,6 @@ class Simulation:
                         amounts_sent = self.fifo(ds, amounts_requested, i)  # currently only works for two retailers!
                         self.warehouse.update_D_in_retailers()
                     else:
-                        flag = True
                         model = mip.MIP()
                         model.set_params(self.warehouse, amounts_plus_backorders)
                         amounts_sent = model.optimal_quantities()
