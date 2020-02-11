@@ -128,19 +128,19 @@ if __name__ == '__main__':
     periods = 1000
     warm_up = 10
     high_var = True
-    name = "process0 - fixed demands"
+    name = "test db"
     demands, distribution = generate_demands(periods + warm_up, high_var)
     demands_low, distribution_low = generate_demands(periods + warm_up, high_var)
     # todo: define scenarios to run here - different name for each scenario
-    r1, r2, r3 = (60, 60), (25, 25), (25, 25)
-    s = sc.Scenario("process0 - fixed demands", periods, warm_up, r1, r2, r3, 20, 20, 2, repeat=1,
+    r1, r2, r3 = (50, 60), (25, 26), (25, 26)
+    s = sc.Scenario("test db", periods, warm_up, r1, r2, r3, 1, 1, 1, repeat=1,
                     high_c_shortage=True, high_var=True, run_me_as=2, demands=demands,
                     distribution=distribution, fifo=False)
     s1 = sc.Scenario("process0 - different demands", periods, warm_up, r1, r2, r3, 20, 20, 2,
                      repeat=1,
                      high_c_shortage=True, high_var=False, run_me_as=2, demands=demands_low,
                      distribution=distribution_low, fifo=False)
-    scenarios = [s, s1]
+    scenarios = [s]
     for scenario in scenarios:
         before = time.time()
         run_scenario_sequential(scenario)
