@@ -1,6 +1,6 @@
 import shelve
 
-name = "test db"
+name = "r0 in steps"
 name_header = name + " - header"
 
 db_header = shelve.open(name_header)
@@ -50,7 +50,7 @@ def group(db_list):
     for i in dict.keys():
         for j in range(len(dict[i])):
             dict[i][j] = sorted(dict[i][j])
-        print(i, dict[i],"\n")
+        print(dict[i], ", value: ",i,"\n")
     return dict
 
 
@@ -58,8 +58,8 @@ db_data = shelve.open(name)
 db_list = []
 for k in db_data.keys():
     db_list.append((k, db_data[k]))
-
-db_list.sort(key=lambda x: x[0])
+# key=lambda x: x[0]
+db_list.sort(key=fifo)
 db_list.sort(key=mip)
 
 db_data.close()
