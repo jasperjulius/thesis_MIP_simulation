@@ -18,6 +18,8 @@ import multiprocessing as mp
 from simulation import binomial
 from simulation import neg_binomial
 from numpy import random as rand
+from statistics import variance
+import db_reader as reader
 
 parallel = False
 
@@ -126,23 +128,28 @@ def generate_demands(periods, high_var):
 
 if __name__ == '__main__':
 
-    periods = 10000
+    periods = 500
     warm_up = 100
     demands_high, distribution_high = generate_demands(periods + warm_up, True)
     demands_low, distribution_low = generate_demands(periods + warm_up, False)
 
     # todo: define scenarios to run here - different name for each scenario
-    r1, r2, r3 = (0, 60), (20, 60), (20, 60)
-    s = sc.Scenario("r0 in steps", periods, warm_up, r1, r2, r3, 15, 1, 1, repeat=1,
+    r1, r2, r3 = (0, 60), (40, 40), (40, 40)
+    s = sc.Scenario("trash", periods, warm_up, r1, r2, r3, 15, 1, 1, repeat=1,
                     high_c_shortage=True, high_var=True, run_me_as=0, demands=demands_high,
                     distribution=distribution_high, fifo=False)
 
     scenarios = [s]
+
     for scenario in scenarios:
         before = time.time()
-        run_scenario_parallel(scenario)
+        run_scenario_sequential(scenario)
         after = time.time()
         db = shelve.open(scenario.number + " - header")
+        observed_average = [round(sum(i)/len(i), 4) for i in scenario.demands]
+        db["observed average"] = observed_average
+        observed_variance = [round(variance(i, scenario.distribution[3]), 4) for i in scenario.demands]
+        db["observed variance"] = observed_variance
         db["name"] = scenario.number
         db["periods"] = periods
         db["warm up"] = warm_up
@@ -151,3 +158,5 @@ if __name__ == '__main__':
         db["distribution"] = scenario.distribution
         db["runtime hours"] = round((after - before) / 3600, 3)
         db.close()
+
+        reader.run(scenario.number)

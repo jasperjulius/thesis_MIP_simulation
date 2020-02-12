@@ -1,15 +1,5 @@
 import shelve
 
-name = "test db"
-name_header = name + " - header"
-
-db_header = shelve.open(name_header)
-for i in db_header.keys():
-    print(i, db_header[i])
-periods = db_header["periods"]
-db_header.close()
-
-
 def mip(elem):
     return elem[1][0]
 
@@ -53,19 +43,27 @@ def group(db_list):
         print(i, dict[i],"\n")
     return dict
 
+def run(name):
+    name_header = name + " - header"
 
-db_data = shelve.open(name)
-db_list = []
-for k in db_data.keys():
-    db_list.append((k, db_data[k]))
+    db_header = shelve.open(name_header)
+    for i in db_header.keys():
+        print(i, db_header[i])
+    periods = db_header["periods"]
+    db_header.close()
 
-db_list.sort(key=lambda x: x[0])
-db_list.sort(key=mip)
+    db_data = shelve.open(name)
+    db_list = []
+    for k in db_data.keys():
+        db_list.append((k, db_data[k]))
 
-db_data.close()
+    db_list.sort(key=lambda x: x[0])
+    db_list.sort(key=mip)
 
-group(db_list)
+    db_data.close()
 
-print(min(db_list, key=mip), min(db_list, key=batch), min(db_list, key=fifo))
-print("MIN: ", round(mip(min(db_list, key=mip)) / periods, 2), round(batch(min(db_list, key=batch)) / periods, 2),
-      round(fifo(min(db_list, key=fifo)) / periods, 2))
+    group(db_list)
+
+    print(min(db_list, key=mip), min(db_list, key=batch), min(db_list, key=fifo))
+    print("MIN: ", round(mip(min(db_list, key=mip)) / periods, 2), round(batch(min(db_list, key=batch)) / periods, 2),
+          round(fifo(min(db_list, key=fifo)) / periods, 2))

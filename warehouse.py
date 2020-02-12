@@ -1,7 +1,7 @@
 class Warehouse:
     # warehouse object; variables beginning with "doc" are for documentation purposes, meaning they are used after simulation to calculate total costs or to reset the warehouse to its initial state
 
-    def __init__(self, stock=100, R=60, lead=2, c_holding=0.05, c_fixed_order=1.5):
+    def __init__(self, stock=100, R=60, lead=2, c_holding=0.1, c_fixed_order=1.5):
 
         self.av_demand = 0
         self.c_fixed_order = c_fixed_order
