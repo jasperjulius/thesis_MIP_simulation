@@ -37,7 +37,9 @@ class Warehouse:
         demand = sum(r.av_demand for r in self.retailers)
 
         self.av_demand = demand
-        self.Q = sum(r.Q for r in self.retailers)
+        from math import ceil
+        self.Q = ceil((2 * demand * self.c_fixed_order / self.c_holding) ** 0.5)    # todo: change back to sum
+        # self.Q = sum(r.Q for r in self.retailers)
 
     # send stock from outside supplier to wh
     def add_stock(self, amount):

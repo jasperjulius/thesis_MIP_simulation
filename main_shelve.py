@@ -20,6 +20,7 @@ from simulation import neg_binomial
 from numpy import random as rand
 from statistics import variance
 import db_reader as reader
+import pickle
 
 parallel = False
 
@@ -128,16 +129,17 @@ def generate_demands(periods, high_var):
 
 if __name__ == '__main__':
 
-    periods = 500
+    periods = 2000
     warm_up = 100
     demands_high, distribution_high = generate_demands(periods + warm_up, True)
     demands_low, distribution_low = generate_demands(periods + warm_up, False)
-
+    with open("demands_low.txt", "rb") as fp:
+        demands_low = pickle.load(fp)
     # todo: define scenarios to run here - different name for each scenario
-    r1, r2, r3 = (0, 60), (40, 40), (40, 40)
-    s = sc.Scenario("trash", periods, warm_up, r1, r2, r3, 15, 1, 1, repeat=1,
-                    high_c_shortage=True, high_var=True, run_me_as=0, demands=demands_high,
-                    distribution=distribution_high, fifo=False)
+    r1, r2, r3 = (10, 30), (10, 50), (10, 50)
+    s = sc.Scenario("nachstellung der alten ergebnisse", periods, warm_up, r1, r2, r3, 10, 10, 10, repeat=1,
+                    high_c_shortage=True, high_var=False, run_me_as=0, demands=demands_high,
+                    distribution=distribution_low, fifo=False)
 
     scenarios = [s]
 

@@ -44,11 +44,7 @@ def group(db_list):
     return dict
 
 def run(name):
-    name_header = name + " - header"
-
-    db_header = shelve.open(name_header)
-    for i in db_header.keys():
-        print(i, db_header[i])
+    db_header = shelve.open(name + " - header")
     periods = db_header["periods"]
     db_header.close()
 
@@ -57,9 +53,8 @@ def run(name):
     for k in db_data.keys():
         db_list.append((k, db_data[k]))
 
-    db_list.sort(key=lambda x: x[0])
+    # db_list.sort(key=lambda x: x[0])
     db_list.sort(key=mip)
-
     db_data.close()
 
     group(db_list)
@@ -67,3 +62,10 @@ def run(name):
     print(min(db_list, key=mip), min(db_list, key=batch), min(db_list, key=fifo))
     print("MIN: ", round(mip(min(db_list, key=mip)) / periods, 2), round(batch(min(db_list, key=batch)) / periods, 2),
           round(fifo(min(db_list, key=fifo)) / periods, 2))
+
+
+if __name__ == "__main__":
+    print("HERE I AMeu")
+    name = "nachstellung der alten ergebnisse - new Q"
+    run(name)
+
