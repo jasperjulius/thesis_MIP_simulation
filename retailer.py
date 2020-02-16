@@ -24,7 +24,6 @@ class Retailer:
 
         self.D = 0
         self.demands = []
-        self.period = 0
         if demands is None:
             for i in range(periods):
                 self.demands.append(
@@ -41,12 +40,11 @@ class Retailer:
         self.doc_inv = []
         self.doc_setup_counter = 0
 
-    def process_arrivals(self, period):
-        self.period = period
+    def process_arrivals(self):
         self.current_inv += self.pending_arrivals[0]
         self.pending_arrivals[0] = 0
 
-    def update_evening(self, period):   # lets period pass by processing occurring demand, appending documentation of IN_i, shifting outstanding delivieries to next period
+    def update_evening(self, period):   # lets period pass by processing occurring demand, appending documentation of IN_i, shifting outstanding deliveries to next period
         self.current_inv -= self.demands[period]
         self.pending_arrivals.append(0)
         self.doc_pending_arrivals.append(0)

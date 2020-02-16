@@ -1,5 +1,6 @@
 import shelve
 
+
 def mip(elem):
     return elem[1][0]
 
@@ -17,11 +18,10 @@ def key(elem):
 
 
 def value(elem):
-    return elem[1]
+    return str(elem[1])
 
 
 def group(db_list):
-
     def concatenate(old, new):
         new_elems = new.split(sep=", ")
         for i in range(len(old)):
@@ -40,15 +40,13 @@ def group(db_list):
     for i in dict.keys():
         for j in range(len(dict[i])):
             dict[i][j] = sorted(dict[i][j])
-        print(dict[i], ", value: ",i,"\n")
+        print(dict[i], "\n\t\t", i, "\n")
     return dict
 
 
 def run(name):
     db_header = shelve.open(name + " - header")
     periods = db_header["periods"]
-    for i in db_header.keys():
-        print(i, ": ", db_header[i])
     db_header.close()
 
     db_data = shelve.open(name)
@@ -62,13 +60,13 @@ def run(name):
 
     group(db_list)
 
-    print(min(db_list, key=mip), min(db_list, key=batch), min(db_list, key=fifo))
-    print("MIN: ", round(mip(min(db_list, key=mip)) / periods, 2), round(batch(min(db_list, key=batch)) / periods, 2),
+    print(min(db_list, key=mip), "\n", min(db_list, key=batch), "\n", min(db_list, key=fifo))
+    print("MIN: ", round(mip(min(db_list, key=mip)) / periods, 2),
+          round(batch(min(db_list, key=batch)) / periods, 2),
           round(fifo(min(db_list, key=fifo)) / periods, 2))
 
 
 if __name__ == "__main__":
     print("HERE I AMeu")
-    name = "nachstellung der alten ergebnisse - new q"
+    name = "test"
     run(name)
-

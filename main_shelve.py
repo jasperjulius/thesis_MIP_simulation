@@ -32,6 +32,21 @@ def total_costs(total_sep):
     return total
 
 
+def create_stats(stats):
+    total_c = total_costs(stats)
+    stats_round = [[round(i, 1) for i in list] for list in stats]
+    return round(total_c, 1), stats_round
+
+
+def group_stats(full_stats):
+    temp = [i for i in zip(*full_stats)]
+    result = []
+    for i in temp:
+        for j in i:
+            result.append(j)
+    return result
+
+
 def run_scenario_sequential(scen):
     global scenario
     scenario = scen
@@ -59,13 +74,12 @@ def run_scenario_parallel(scen):
 
 
 def execute_single_run(current):
-
     global scenario
     only_fifo = scenario.fifo
     sim = simulation.Simulation(length=scenario.length, warm_up=scenario.warm_up, stock=60,
                                 high_var=scenario.high_var,
                                 high_c_shortage=scenario.high_c_shortage, demands=scenario.demands,
-                                distribution=scenario.distribution)
+                                distribution=scenario.distribution, L0=scenario.L0)
     print(current)
     print(round(((current[3] / scenario.duration) * 100), 2), "%")
     key = str(current[0]) + ", " + str(current[1]) + ", " + str(current[2])
@@ -78,18 +92,18 @@ def execute_single_run(current):
         # mip
         settings.no_batch_splitting = False
         sim.run(FIFO=False)
-        value_mip = round(total_costs(sim.collect_statistics()), 2)
+        value_mip = create_stats(sim.collect_statistics())
         sim.reset()
 
         # mip - no batch splitting
         settings.no_batch_splitting = True
         sim.run(FIFO=False)
-        value_batch = round(total_costs(sim.collect_statistics()), 2)
+        value_batch = create_stats(sim.collect_statistics())
         sim.reset()
 
     # fifo
     sim.run(FIFO=True)
-    value_fifo = round(total_costs(sim.collect_statistics()), 2)
+    value_fifo = create_stats(sim.collect_statistics())
     sim.reset()
 
     # save result of run into database
@@ -99,8 +113,7 @@ def execute_single_run(current):
         if only_fifo:
             db[key] = (value_fifo,)
         else:
-            value = (value_mip, value_batch, value_fifo)
-            print("key:", key, ", value:", value)
+            value = group_stats((value_mip, value_batch, value_batch))
             db[key] = value
     if parallel:
         lock.release()
@@ -129,36 +142,62 @@ def generate_demands(periods, high_var):
 
 if __name__ == '__main__':
 
-    periods = 5000
+    periods = 10000
     warm_up = 100
     demands_high, distribution_high = generate_demands(periods + warm_up, True)
     demands_low, distribution_low = generate_demands(periods + warm_up, False)
-    with open("demands_low.txt", "rb") as fp:
-        demands_low = pickle.load(fp)
-    # todo: define scenarios to run here - different name for each scenario
-    r1, r2, r3 = (0, 75), (10, 60), (10, 60)
-    s = sc.Scenario("nachstellung der alten ergebnisse - new Q - low L", periods, warm_up, r1, r2, r3, 15, 2, 2, repeat=1,
-                    high_c_shortage=True, high_var=True, run_me_as=0, demands=demands_high,
-                    distribution=distribution_high, fifo=False)
 
-    scenarios = [s]
+    flag = False
+    if flag:
+        with open("demands_high.txt", "wb") as f:
+            pickle.dump(demands_high, f)
+        with open("demands_low.txt", "wb") as f:
+            pickle.dump(demands_low, f)
+    with open("demands_high.txt", "rb") as f:
+        demands_high = pickle.load(f)
+    with open("demands_low.txt", "rb") as f:
+        demands_low = pickle.load(f)
+
+    r1, r2, r3 = (15, 75), (10, 60), (10, 60)
+
+    settings1 = {"high_c_shortage": True, "L0": 1}
+    s1 = sc.Scenario("nachstellung alter ergebnisse - new Q, low L0, high var", periods, warm_up, r1, r2, r3, 15, 2, 2,
+                     repeat=1,
+                     high_var=True, run_me_as=0, demands=demands_high,
+                     distribution=distribution_high, fifo=False, settings=settings1)
+    s2 = sc.Scenario("nachstellung alter ergebnisse - new Q, low L0, low var", periods, warm_up, r1, r2, r3, 15, 2, 2,
+                     repeat=1,
+                     high_var=False, run_me_as=0, demands=demands_low,
+                     distribution=distribution_low, fifo=False, settings=settings1)
+
+    settings2 = {"high_c_shortage": True, "L0": 2}
+    s3 = sc.Scenario("nachstellung alter ergebnisse - new Q, high L0, high var", periods, warm_up, r1, r2, r3, 15, 2, 2,
+                     repeat=1,
+                     high_var=True, run_me_as=0, demands=demands_high,
+                     distribution=distribution_high, fifo=False, settings=settings2)
+    s4 = sc.Scenario("nachstellung alter ergebnisse - new Q, high L0, low var", periods, warm_up, r1, r2, r3, 15, 2, 2,
+                     repeat=1,
+                     high_var=False, run_me_as=0, demands=demands_low,
+                     distribution=distribution_low, fifo=False, settings=settings2)
+    scenarios = [s1, s2, s3, s4]
 
     for scenario in scenarios:
         before = time.time()
-        run_scenario_parallel(scenario)
+        run_scenario_sequential(scenario)
         after = time.time()
         db = shelve.open(scenario.number + " - header")
-        observed_average = [round(sum(i)/len(i), 4) for i in scenario.demands]
+        observed_average = [round(sum(i) / len(i), 4) for i in scenario.demands]
         db["observed average"] = observed_average
         observed_variance = [round(variance(i, scenario.distribution[3]), 4) for i in scenario.demands]
         db["observed variance"] = observed_variance
         db["name"] = scenario.number
+        db["L0"] = scenario.L0
         db["periods"] = periods
         db["warm up"] = warm_up
         db["high var"] = scenario.high_var
         db["high c ratio"] = scenario.high_c_shortage
         db["distribution"] = scenario.distribution
-        db["runtime hours"] = round((after - before) / 3600, 3)
+        db["runtime hours"] = round((after - before) / 3600, 2)
         db.close()
 
         reader.run(scenario.number)

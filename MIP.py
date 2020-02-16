@@ -117,7 +117,7 @@ class MIP:
         graph_out_of_range = [g for g in graph if g[0] > self.p_stock_warehouse or g[0] > self.max_orders[i]]
         for i in range(len(graph_out_of_range) - 1):
             del graph[-1]
-        if not graph or len(graph) < 2:
+        if not graph or len(graph) < 2:  # todo: unsauber; wird eh nie erreicht meine ich, raus einfach?
             graph = [(0, 0), (1, 0)]
 
         return graph

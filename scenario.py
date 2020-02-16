@@ -1,17 +1,23 @@
 class Scenario:
 
     def __init__(self, number, length, warm_up, R0, R1, R2, step0, step1, step2, repeat=1, high_var=True,
-                 high_c_shortage=True, fifo=False, run_me_as=0, demands=None, distribution=None):
+                 high_c_shortage=True, fifo=False, run_me_as=0, demands=None, distribution=None, settings={}):
         self.length = length
         self.warm_up = warm_up
         self.demands = demands
         self.distribution = distribution
-
+        self.high_c_shortage = high_c_shortage
+        self.L0 = 2
+        for key in settings:
+            if key == "L0":
+                self.L0 = settings[key]
+            if key == "high_c_shortage":
+                self.high_c_shortage = settings[key]
         self.fifo = fifo
         self.run_me_as = run_me_as
         self.number = number
         self.high_var = high_var
-        self.high_c_shortage = high_c_shortage
+
         self.repeat = repeat
         self.R0 = R0[0]
         self.R1 = R1[0]
