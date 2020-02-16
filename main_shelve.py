@@ -129,23 +129,23 @@ def generate_demands(periods, high_var):
 
 if __name__ == '__main__':
 
-    periods = 2000
+    periods = 5000
     warm_up = 100
     demands_high, distribution_high = generate_demands(periods + warm_up, True)
     demands_low, distribution_low = generate_demands(periods + warm_up, False)
     with open("demands_low.txt", "rb") as fp:
         demands_low = pickle.load(fp)
     # todo: define scenarios to run here - different name for each scenario
-    r1, r2, r3 = (10, 30), (10, 50), (10, 50)
-    s = sc.Scenario("nachstellung der alten ergebnisse", periods, warm_up, r1, r2, r3, 10, 10, 10, repeat=1,
-                    high_c_shortage=True, high_var=False, run_me_as=0, demands=demands_high,
-                    distribution=distribution_low, fifo=False)
+    r1, r2, r3 = (0, 75), (10, 60), (10, 60)
+    s = sc.Scenario("nachstellung der alten ergebnisse - new Q - low L", periods, warm_up, r1, r2, r3, 15, 2, 2, repeat=1,
+                    high_c_shortage=True, high_var=True, run_me_as=0, demands=demands_high,
+                    distribution=distribution_high, fifo=False)
 
     scenarios = [s]
 
     for scenario in scenarios:
         before = time.time()
-        run_scenario_sequential(scenario)
+        run_scenario_parallel(scenario)
         after = time.time()
         db = shelve.open(scenario.number + " - header")
         observed_average = [round(sum(i)/len(i), 4) for i in scenario.demands]

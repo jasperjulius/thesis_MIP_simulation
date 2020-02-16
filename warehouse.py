@@ -1,7 +1,7 @@
 class Warehouse:
     # warehouse object; variables beginning with "doc" are for documentation purposes, meaning they are used after simulation to calculate total costs or to reset the warehouse to its initial state
 
-    def __init__(self, stock=100, R=60, lead=2, c_holding=0.1, c_fixed_order=1.5):
+    def __init__(self, stock=100, R=60, lead=1, c_holding=0.1, c_fixed_order=1.5):
 
         self.av_demand = 0
         self.c_fixed_order = c_fixed_order
@@ -37,9 +37,9 @@ class Warehouse:
         demand = sum(r.av_demand for r in self.retailers)
 
         self.av_demand = demand
-        from math import ceil
-        self.Q = ceil((2 * demand * self.c_fixed_order / self.c_holding) ** 0.5)    # todo: change back to sum
-        # self.Q = sum(r.Q for r in self.retailers)
+        #  from math import ceil
+        #  self.Q = ceil((2 * demand * self.c_fixed_order / self.c_holding) ** 0.5)    # todo: change back to sum
+        self.Q = sum(r.Q for r in self.retailers)
 
     # send stock from outside supplier to wh
     def add_stock(self, amount):
@@ -109,7 +109,6 @@ class Warehouse:
         del self.pending_arrivals[:1]
         for r in self.retailers:
             r.update_evening(period)
-
     # calculates ip of wh, comprising of stock + pending arrivals - backorders
     def ip(self):
         ip = self.stock

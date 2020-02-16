@@ -43,9 +43,12 @@ def group(db_list):
         print(dict[i], ", value: ",i,"\n")
     return dict
 
+
 def run(name):
     db_header = shelve.open(name + " - header")
     periods = db_header["periods"]
+    for i in db_header.keys():
+        print(i, ": ", db_header[i])
     db_header.close()
 
     db_data = shelve.open(name)
@@ -66,6 +69,6 @@ def run(name):
 
 if __name__ == "__main__":
     print("HERE I AMeu")
-    name = "nachstellung der alten ergebnisse - new Q"
+    name = "nachstellung der alten ergebnisse - new q"
     run(name)
 
