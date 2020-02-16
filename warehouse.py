@@ -37,9 +37,9 @@ class Warehouse:
         demand = sum(r.av_demand for r in self.retailers)
 
         self.av_demand = demand
-        from math import ceil
-        self.Q = ceil((2 * demand * self.c_fixed_order / self.c_holding) ** 0.5)    # todo: change back to sum
-        # self.Q = sum(r.Q for r in self.retailers)
+        # from math import ceil
+        # self.Q = ceil((2 * demand * self.c_fixed_order / self.c_holding) ** 0.5)    # todo: change back to sum
+        self.Q = sum(r.Q for r in self.retailers)
 
     # send stock from outside supplier to wh
     def add_stock(self, amount):
@@ -93,9 +93,9 @@ class Warehouse:
             print(r.number, ", stock: ", r.current_inv, ", ip:", r.ip(), ", pending_arrivals: ", r.pending_arrivals)
 
     # processes arrivals at each retailer: outstanding orders in current period are added to physical inventory
-    def arrivals_retailers(self, period):
+    def arrivals_retailers(self):
         for r in self.retailers:
-            r.process_arrivals(period)
+            r.process_arrivals()
 
     # processes arrivals at warehouse: outstanding orders in current period are added to physical inventory
     def process_arrivals(self):

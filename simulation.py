@@ -34,14 +34,12 @@ def binomial(n, p):
 
 class Simulation:
 
-    def __init__(self, num_retailers=2, length=100, warm_up=None, stock=100, high_var=True, high_c_shortage=True, demands=None, distribution=None):
+    def __init__(self, num_retailers=2, length=100, warm_up=None, stock=100, high_var=True, high_c_shortage=True, demands=None, distribution=None, L0=2):
         self.length = length
-        self.warehouse = wh.Warehouse(stock=stock)
+        self.warehouse = wh.Warehouse(stock=stock, lead=L0)
         self.stats = None
         self.num_retailers = num_retailers
         self.warm_up = warm_up
-        if distribution is not None:
-            self.distribution = distribution
 
         for i in range(num_retailers):
             if demands is None:
@@ -57,6 +55,7 @@ class Simulation:
                     random = [i for i in rand.negative_binomial(n, p, length)]
             else:
                 random = demands[i]
+                self.distribution = distribution
 
             r = rt.Retailer(i, self.warehouse, self.length, seed=-1, demands=random)
             if high_c_shortage:
@@ -100,16 +99,17 @@ class Simulation:
 
             else:
                 amounts_sent = amounts_plus_backorders.copy()
+
             if not FIFO:
                 self.update_ds_mip(amounts_requested, amounts_sent, ds)
                 self.warehouse.update_D_in_retailers()
 
             self.warehouse.send_stocks(amounts_sent, i)  # includes fixed costs of rt
-            self.warehouse.arrivals_retailers(i)
+            self.warehouse.arrivals_retailers()
             self.warehouse.update_D_in_retailers()
             self.warehouse.update_evening(i)
 
-    def collect_statistics(self):
+    def collect_statistics(self):      # returns :[[H_0, H_1, H_2],[S_0, S_1, S_2],[F_0, F_1, F_2]]
         rt_invs = []
         p_cost_h = []
         p_cost_s = []
@@ -181,8 +181,7 @@ class Simulation:
         ips = []
         j = 0
 
-        # todo: wie kann ip weiter als d unter R liegen? ausgleichende bestellung der letzten periode müsste bei nichterfüllung in backorders enthalten sein, womit man letzte periode wieder über R war
-        for r in self.warehouse.retailers:  # todo: das muss nochmal überdacht werden...
+        for r in self.warehouse.retailers:
             d = max(1, r.demands[max(0, period - 1)])
             R = r.R
             ip = r.ip()
@@ -206,18 +205,15 @@ class Simulation:
                 stock -= max_amount
         return send
 
-    def update_ds_mip(self, _amounts_requested, _amounts_sent, ds):
+    def update_ds_mip(self, _amounts_requested, _amounts_sent, ds):  # hunt: sieht gut aus - not tested
         if not ds:
             ds.append([0, 0])
             ds.append([1, 0])
         amounts_requested = _amounts_requested.copy()
         amounts_sent = _amounts_sent.copy()
 
-        def reduce_by(a1, a2):
-            return max(0, min(a1, a2))
-
         for i in range(2):
-            a = reduce_by(ds[i][1], amounts_sent[i])
+            a = max(0, min(ds[i][1], amounts_sent[i]))
             ds[i][1] -= a
             amounts_sent[i] -= a
 
