@@ -113,7 +113,7 @@ def execute_single_run(current):
         if only_fifo:
             db[key] = (value_fifo,)
         else:
-            value = group_stats((value_mip, value_batch, value_batch))
+            value = group_stats((value_mip, value_batch, value_fifo))
             db[key] = value
     if parallel:
         lock.release()
@@ -183,7 +183,7 @@ if __name__ == '__main__':
 
     for scenario in scenarios:
         before = time.time()
-        run_scenario_sequential(scenario)
+        run_scenario_parallel(scenario)
         after = time.time()
         db = shelve.open(scenario.number + " - header")
         observed_average = [round(sum(i) / len(i), 4) for i in scenario.demands]
@@ -199,5 +199,5 @@ if __name__ == '__main__':
         db["distribution"] = scenario.distribution
         db["runtime hours"] = round((after - before) / 3600, 2)
         db.close()
-
+        print("done with scenario", scenario.number)
         reader.run(scenario.number)

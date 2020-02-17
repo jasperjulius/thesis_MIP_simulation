@@ -47,8 +47,9 @@ def group(db_list):
 def run(name):
     db_header = shelve.open(name + " - header")
     periods = db_header["periods"]
+    for k in db_header.keys():
+        print(k, ": ", db_header[k])
     db_header.close()
-
     db_data = shelve.open(name)
     db_list = []
     for k in db_data.keys():
@@ -65,8 +66,14 @@ def run(name):
           round(batch(min(db_list, key=batch)) / periods, 2),
           round(fifo(min(db_list, key=fifo)) / periods, 2))
 
+def diffs_batch_mip(name):
+    db = shelve.open(name)
+    for k in db.keys():
+        if not db[k][1] == db[k][2]:
+            print(k, ": ",db[k])
+    db.close()
 
 if __name__ == "__main__":
     print("HERE I AMeu")
-    name = "test"
+    name = "nachstellung alter ergebnisse - new Q, high L0, high var"
     run(name)
