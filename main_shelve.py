@@ -127,7 +127,7 @@ def generate_demands(periods, high_var):
         dist = binomial(n, p)
         for i in range(2):
             demand = rand.binomial(n, p, periods)
-            print(sum(demand) / len(demand))
+            print("high:",high_var,", avg:", sum(demand) / len(demand))
             random.append(demand)
     else:
         n = 20
@@ -135,15 +135,15 @@ def generate_demands(periods, high_var):
         dist = neg_binomial(n, p)
         for i in range(2):
             demand = rand.negative_binomial(n, p, periods)
-            print(sum(demand) / len(demand))
+            print("high:",high_var,", avg:", sum(demand) / len(demand))
             random.append(demand)
     return random, dist
 
 
 if __name__ == '__main__':
 
-    periods = 100
-    warm_up = 10
+    periods = 10000
+    warm_up = 100
     demands_high, distribution_high = generate_demands(periods + warm_up, True)
     demands_low, distribution_low = generate_demands(periods + warm_up, False)
 
@@ -158,7 +158,7 @@ if __name__ == '__main__':
     with open("demands_low.txt", "rb") as f:
         demands_low = pickle.load(f)
 
-    r1, r2, r3 = (15, 75), (10, 60), (10, 60)
+    r1, r2, r3 = (15, 60), (25, 65), (25, 65)
 
     settings1 = {"high_c_shortage": True, "L0": 1}
     s1 = sc.Scenario("nachstellung alter ergebnisse - new Q, low L0, high var", periods, warm_up, r1, r2, r3, 15, 2, 2,
@@ -179,7 +179,11 @@ if __name__ == '__main__':
                      repeat=1,
                      high_var=False, run_me_as=0, demands=demands_low,
                      distribution=distribution_low, fifo=False, settings=settings2)
-    scenarios = [s1, s2, s3, s4]
+    s5 = sc.Scenario("equal retailers test", periods, warm_up, r1, r2, r3, 15, 1, 1,
+                     repeat=1,
+                     high_var=True, run_me_as=0, demands=demands_high,
+                     distribution=distribution_high, fifo=False, settings=settings2)
+    scenarios = [s5]
 
     for scenario in scenarios:
         before = time.time()

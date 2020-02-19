@@ -82,14 +82,14 @@ def run_scenario(scenario):
         sheet["D%d" % (first_row + current[3])] = str(sim.warehouse.retailers[0].seed) + "," + str(
             sim.warehouse.retailers[1].seed)
 
-        settings.no_batch_splitting = False
+        settings.full_batches = False
         pre1 = time.time()
         sim.run(FIFO=False)
         after1 = time.time()
         print_results_to_sheet(sim.collect_statistics(), sheet, current[3], 8)
         sim.reset()
 
-        settings.no_batch_splitting = True
+        settings.full_batches = True
         pre2 = time.time()
         sim.run(FIFO=False)
         after2 = time.time()
@@ -135,10 +135,10 @@ if __name__ == '__main__':
     with open("demands_low.txt", "rb") as f:
         demands_low = pickle.load(f)
 
-    r1, r2, r3 = (15, 75), (40, 48), (40, 48)
-    settings1 = {"high_c_shortage": True, "L0": 1}
-    s1 = sc.Scenario("nachstellung alter ergebnisse - new Q, low L0, high var", periods, warm_up, r1, r2, r3, 15, 2,
-                     2,
+    r1, r2, r3 = (15, 60), (25, 65), (25, 65)
+    settings1 = {"high_c_shortage": True, "L0": 2}
+    s1 = sc.Scenario("equal retailers test", periods, warm_up, r1, r2, r3, 15, 1,
+                     1,
                      repeat=1,
                      high_var=True, run_me_as=0, demands=demands_high,
                      distribution=distribution_high, fifo=False, settings=settings1)
