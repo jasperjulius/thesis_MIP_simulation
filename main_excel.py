@@ -10,6 +10,7 @@ import scenario as sc
 from math import trunc
 import mytimes
 import settings
+import pickle
 import multiprocessing as mp
 from main_shelve import generate_demands
 
@@ -67,7 +68,7 @@ def run_scenario(scenario):
         sim = simulation.Simulation(length=scenario.length, warm_up=scenario.warm_up, stock=60,
                                     high_var=scenario.high_var,
                                     high_c_shortage=scenario.high_c_shortage, demands=scenario.demands,
-                                    distribution=scenario.distribution)
+                                    distribution=scenario.distribution, L0=scenario.L0)
         print(current)
         print(round(((current[3] / scenario.duration) * 100), 2), "%")
 
@@ -122,12 +123,23 @@ def run_scenario(scenario):
 
 
 if __name__ == '__main__':
-    periods = 100000
+    periods = 10000
     warm_up = 100
     high_var = True
-    name = "how long"
-    demands, distribution = generate_demands(periods + warm_up, high_var)
-    scenario = sc.Scenario(name, periods, warm_up, (0, 60), (10, 60), (10, 60), 15, 50, 1, repeat=1,
-                           high_c_shortage=True, high_var=high_var, run_me_as=2, demands=None,
-                           distribution=None, fifo=False)
-    run_scenario(scenario)
+
+    demands_high, distribution_high = generate_demands(periods + warm_up, True)
+    demands_low, distribution_low = generate_demands(periods + warm_up, False)
+
+    with open("demands_high.txt", "rb") as f:
+        demands_high = pickle.load(f)
+    with open("demands_low.txt", "rb") as f:
+        demands_low = pickle.load(f)
+
+    r1, r2, r3 = (15, 75), (40, 48), (40, 48)
+    settings1 = {"high_c_shortage": True, "L0": 1}
+    s1 = sc.Scenario("nachstellung alter ergebnisse - new Q, low L0, high var", periods, warm_up, r1, r2, r3, 15, 2,
+                     2,
+                     repeat=1,
+                     high_var=True, run_me_as=0, demands=demands_high,
+                     distribution=distribution_high, fifo=False, settings=settings1)
+    run_scenario(s1)

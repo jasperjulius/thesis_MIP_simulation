@@ -2,6 +2,9 @@ import MIP as mip
 import retailer as rt
 import warehouse as wh
 import numpy.random as rand
+import mytimes
+import time
+import settings
 from math import ceil
 
 
@@ -57,7 +60,7 @@ class Simulation:
                 random = demands[i]
                 self.distribution = distribution
 
-            r = rt.Retailer(i, self.warehouse, self.length, seed=-1, demands=random)
+            r = rt.Retailer(i, self.warehouse, demands=random)
             if high_c_shortage:
                 r.c_shortage = 4.9
             else:
@@ -75,7 +78,6 @@ class Simulation:
             self.warehouse.process_arrivals()
 
             amounts_requested = retailer_orders(self.warehouse, i)
-            # print("ordered amounts: ", initial_amounts, "\n")
             ds = self.warehouse.get_ds()
             each_retailer_d = self.warehouse.sum_d_each_retailer()
             amounts_plus_backorders = [i + j for i, j in zip(each_retailer_d, amounts_requested)]
@@ -120,7 +122,7 @@ class Simulation:
 
         # kosten warehouse
         w = self.warehouse
-        total_h.append(sum(w.doc_inv[self.warm_up:]) * w.c_holding)
+        total_h.append(sum(w.doc_inv) * w.c_holding)
         total_s.append(0)
         total_f.append(w.doc_setup_counter * w.c_fixed_order)
 
@@ -140,8 +142,7 @@ class Simulation:
             total_f.append(cost_f)
 
             # holding, shortage costs calculation
-            for inv in rt_invs[i][
-                       self.warm_up:]:  # simplifizierte version ohne avInv, sondern mit IA as inventory for whole day
+            for inv in rt_invs[i]:  # simplifizierte version ohne avInv, sondern mit IA as inventory for whole day
                 if inv > 0:
                     cost_h += inv
                 elif inv < 0:
@@ -157,11 +158,6 @@ class Simulation:
         self.stats = None
         self.warehouse.reset(warm_up=warm_up)
 
-    def amounts_pre(self, stock, amounts):  # reduce each amount to first multiple of lot possible
-        qs = [self.warehouse.retailers[i].Q for i in range(2)]
-        for i in range(len(amounts)):
-            amounts[i] = amounts[i] - max(0, ceil((amounts[i] - stock) / qs[i]) * qs[i])
-
     @staticmethod
     def max_amount_possible(amount, stock, q):
         return amount - max(0, ceil((amount - stock) / q) * q)
@@ -171,16 +167,14 @@ class Simulation:
             return elem[1]
 
         stock = self.warehouse.stock
-
         qs = [self.warehouse.retailers[i].Q for i in range(2)]
         ds = _ds  # not .copy(), bc allowed to edit ds
         amounts = _amounts.copy()
 
         send, stock = self.satisfy_ds(stock, ds)
-        # self.amounts_pre(stock, amounts)
+
         ips = []
         j = 0
-
         for r in self.warehouse.retailers:
             d = max(1, r.demands[max(0, period - 1)])
             R = r.R
@@ -189,7 +183,7 @@ class Simulation:
             if position[1] < 0 and not period == 0:
                 print("fcfs serving order - position too low - position:", position, ", ip: ", ip, "demand: ", d,
                       ", R:", R)
-                print("ip components - pending arrivals: ",r.pending_arrivals, ", IN :", r.current_inv, " backlog D at warehouse:", r.D)
+                print("ip components - pending arrivals: ", r.pending_arrivals, ", IN :", r.current_inv, " backlog D at warehouse:", r.D)
             ips.append(position)
             j += 1
 
@@ -205,7 +199,7 @@ class Simulation:
                 stock -= max_amount
         return send
 
-    def update_ds_mip(self, _amounts_requested, _amounts_sent, ds):  # hunt: sieht gut aus - not tested
+    def update_ds_mip(self, _amounts_requested, _amounts_sent, ds):
         if not ds:
             ds.append([0, 0])
             ds.append([1, 0])
@@ -220,23 +214,21 @@ class Simulation:
             if amounts_sent[i] < amounts_requested[i]:
                 ds[i][1] += amounts_requested[i] - amounts_sent[i]
 
-    def satisfy_ds(self, stock, ds):
-        send = [0, 0]
-        qs = [self.warehouse.retailers[i].Q for i in range(2)]
-        min_qs = min(qs)
-        del_counter = 0
 
+    def satisfy_ds(self, stock, ds):
         def amount(elem):
             return elem[1]
 
         def retailer(elem):
             return elem[0]
 
-        def add(elem):
-            send[retailer(elem)] += amount(elem)
-
         def max_amount_possible(elem):
             return amount(elem) - max(0, ceil((amount(elem) - stock) / qs[retailer(elem)]) * qs[retailer(elem)])
+
+        send = [0, 0]
+        qs = [self.warehouse.retailers[i].Q for i in range(2)]
+        min_qs = min(qs)
+        del_counter = 0
 
         for i in ds:
             if stock < min_qs:
@@ -245,7 +237,7 @@ class Simulation:
                 return send, stock
 
             if amount(i) <= stock:
-                add(i)
+                send[retailer(i)] += amount(i)
                 stock -= amount(i)
                 del_counter += 1
             else:

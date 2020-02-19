@@ -113,7 +113,7 @@ def execute_single_run(current):
         if only_fifo:
             db[key] = (value_fifo,)
         else:
-            value = group_stats((value_mip, value_batch, value_batch))
+            value = group_stats((value_mip, value_batch, value_fifo))
             db[key] = value
     if parallel:
         lock.release()
@@ -142,8 +142,8 @@ def generate_demands(periods, high_var):
 
 if __name__ == '__main__':
 
-    periods = 10000
-    warm_up = 100
+    periods = 100
+    warm_up = 10
     demands_high, distribution_high = generate_demands(periods + warm_up, True)
     demands_low, distribution_low = generate_demands(periods + warm_up, False)
 

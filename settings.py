@@ -1,1 +1,1 @@
-no_batch_splitting = False
+full_batches = False

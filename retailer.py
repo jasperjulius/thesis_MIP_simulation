@@ -1,8 +1,8 @@
 from math import ceil
 
 class Retailer:
-
-    def __init__(self, number, warehouse, periods, seed=None, lead=2, av_demand=10, c_holding=0.1, c_shortage=4.9, current_inv=20,
+    # hunt: periods not needed
+    def __init__(self, number, warehouse, seed=None, lead=2, av_demand=10, c_holding=0.1, c_shortage=4.9, current_inv=20,
                  c_fixed_order=1.0, R=40, demands=None):
 
         self.seed = seed
@@ -23,13 +23,7 @@ class Retailer:
         self.doc_pending_arrivals = self.construct_pending()
 
         self.D = 0
-        self.demands = []
-        if demands is None:
-            for i in range(periods):
-                self.demands.append(
-                    self.av_demand)
-        else:
-            self.demands = demands
+        self.demands = demands
 
     def reset(self, warm_up=None):
         if not warm_up:
@@ -44,16 +38,15 @@ class Retailer:
         self.current_inv += self.pending_arrivals[0]
         self.pending_arrivals[0] = 0
 
-    def update_evening(self, period):   # lets period pass by processing occurring demand, appending documentation of IN_i, shifting outstanding deliveries to next period
+    def update_evening(self, period):
         self.current_inv -= self.demands[period]
-        self.pending_arrivals.append(0)
-        self.doc_pending_arrivals.append(0)
-
-        del self.pending_arrivals[:1]
         self.doc_inv.append(self.current_inv)
 
+        self.pending_arrivals.append(0)
+        self.doc_pending_arrivals.append(0)
+        del self.pending_arrivals[:1]
 
-    def determine_ordered_quantity(self):  # currently done in simulation: amount_requested
+    def determine_order_quantity(self):  # currently done in simulation: amount_requested
         pass
 
     def add_stock(self, amount, period):

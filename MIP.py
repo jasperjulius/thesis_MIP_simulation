@@ -1,20 +1,7 @@
 from gurobipy import *
-import mytimes
-import time
-from math import trunc
 import settings
 from combine_graphs import combine_2
 from combine_graphs import transfer_to_Qs
-
-t1 = 0
-t2 = 0
-t3 = 0
-t4 = 0
-t5 = 0
-t6 = 0
-t7 = 0
-t8 = 0
-
 
 
 class MIP:
@@ -59,26 +46,23 @@ class MIP:
         self.q.append(retailer.Q)
 
     def expected_invs(self, i, lead=True):
+
+        over_est = 0    # overestimation of demand occurring per period
         x = []
         start = self.p_lead[i]
         if not lead:
             start = 0
-        for t in range(start,
-                       self.p_lead[i] * 2):  # how many periods into future? aktuell: bei L=2 => range(2,4) => 2,3
 
-            x.append(self.p_current_inv[i] + sum(self.p_pending_arrivals[i][:t + 1]) - self.p_av_demand[i] * (t + 1))
+        for t in range(start, self.p_lead[i] * 2):  # how many periods into future? aktuell: bei L=2 => range(2,4) => 2,3
+            x.append(self.p_current_inv[i] + sum(self.p_pending_arrivals[i][:t + 1]) - (self.p_av_demand[i] + over_est) * (t + 1))
+
         return x
 
-    def holding_objective(self, i):  # only for t >= leadtime
+    def holding_objective(self, i):
         count = 0
         graph = []
         x = 0
-
-        for t in range(self.p_lead[i],
-                       self.p_lead[i] * 2):  # how many periods into future? aktuell: bei L=2 => range(2,4) => 2,3
-
-            x = self.p_current_inv[i] + sum(self.p_pending_arrivals[i][:t + 1]) - self.p_av_demand[
-                i] * (t + 1)  # nimmt inventory am anfang der periode (höhster punkt)
+        for x in self.expected_invs(i):
 
             if count == 0:
                 # add initial point on x axis (-M, 0)
@@ -88,7 +72,7 @@ class MIP:
             graph.append((-x, graph[-1][1] + count * (-x - graph[-1][0])))
             count += 1
 
-        # add final point with  (last_point_x + 1, last_point_y + count)
+        # add final point with (last_point_x + 1, last_point_y + count)
         graph.append((-x + 1, graph[-1][1] + count))
 
         graph_out_of_range = [g for g in graph if g[0] > self.p_stock_warehouse or g[0] > self.max_orders[i]]
@@ -101,13 +85,13 @@ class MIP:
 
         count = 0
         graph = []
-        x = self.expected_invs(i)
-        x = [-i for i in x if i < 0]
-        x.reverse()
-        graph.append((max(x, default=0) + 1, 0))
+        invs = self.expected_invs(i)
+        invs = [-i for i in invs if i < 0]
+        invs.reverse()
+        graph.append((max(invs, default=0) + 1, 0))
 
-        for current in x:
-            graph.append((current, graph[-1][1] + count * (graph[-1][0] - current)))
+        for x in invs:
+            graph.append((x, graph[-1][1] + count * (graph[-1][0] - x)))
             count += 1
 
         # insert final (first) point with x = 0, maximal y calculated as current final y in list + todo: count (+1?)
@@ -118,12 +102,11 @@ class MIP:
         for i in range(len(graph_out_of_range) - 1):
             del graph[-1]
         if not graph or len(graph) < 2:  # todo: unsauber; wird eh nie erreicht meine ich, raus einfach?
-            graph = [(0, 0), (1, 0)]
+            del graph[:]
+            graph.append((0, 0))
+            graph.append((1, 0))
 
         return graph
-
-
-
 
     def optimal_quantities(self):
 
@@ -135,35 +118,31 @@ class MIP:
 
             g1 = self.holding_objective(i)
             g2 = self.shortage_objective(i)
-            g1_copy = g1.copy()
-            g2_copy = g2.copy()
-            if len(g1) <= 1 or len(g2) <= 1:
-                print("get rekt")
-            if settings.no_batch_splitting:
+            if settings.full_batches:
                 g1 = transfer_to_Qs(g1, self.q[i])
                 g2 = transfer_to_Qs(g2, self.q[i])
-            if len(g1) <= 1 or len(g2) <= 1:
-                print("get rekt")
 
             g_combined = combine_2(g1, self.p_c_holding[i], g2, self.p_c_shortage[i])
             if len(g_combined) == 1:
-                g_combined.append((g_combined[-1][0]+1, g_combined[-1][1]))
+                g_combined.append((g_combined[-1][0] + 1, g_combined[-1][1]))
 
             list_x, list_y = map(list, zip(*g_combined))
             self.model.setPWLObj(X_var[i], list_x, list_y)
             Y_fixed[i].Obj = self.p_c_fixed_order[i]
 
-        if settings.no_batch_splitting:
-            self.model.addConstrs(X_var[i]*self.q[i] <= self.max_orders[i] for i in X_var)
-            self.model.addConstr(quicksum(X_var[i]*self.q[i] for i in X_var) <= self.p_stock_warehouse)  # ct max capacity at warehouse
+        if settings.full_batches:
+            self.model.addConstr(quicksum(X_var[i] * self.q[i] for i in X_var) <= self.p_stock_warehouse)  # ct max capacity at warehouse
+            self.model.addConstrs(X_var[i] * self.q[i] <= self.max_orders[i] for i in X_var)
+
         else:
             self.model.addConstr(quicksum(X_var[i] for i in X_var) <= self.p_stock_warehouse)  # ct max capacity at warehouse
             self.model.addConstrs(X_var[i] <= self.max_orders[i] for i in X_var)
 
-        self.model.addConstrs(X_var[i] <= Y_fixed[i]*self.p_stock_warehouse for i in X_var)
+        self.model.addConstrs(X_var[i] <= Y_fixed[i] * self.p_stock_warehouse for i in X_var)
         self.model.optimize()
 
         final = [int(X_var.get(i).X) for i in range(num_i)]
-        if settings.no_batch_splitting:
-            final = [int(X_var.get(i).X)*self.q[i] for i in range(num_i)]
+        if settings.full_batches:
+            final = [int(X_var.get(i).X) * self.q[i] for i in range(num_i)]
+
         return final
