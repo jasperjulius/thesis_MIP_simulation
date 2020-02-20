@@ -278,4 +278,4 @@ if __name__ == '__main__':
         db["runtime hours"] = round((after - before) / 3600, 2)
         db.close()
         print("done with scenario", scenario.name)
-        reader.run(scenario.name)
+        reader.run(scenario.name, False)

@@ -9,7 +9,7 @@ def batch(elem):
     return elem[1][1]
 
 
-def fifo(elem):
+def fcfs(elem):
     return elem[1][2]
 
 
@@ -37,14 +37,15 @@ def group(db_list):
 
         else:
             dict[value(i)] = [{i} for i in key(i).split(sep=", ")]
-    for i in dict.keys():
+    for num, i in enumerate(dict.keys()):
         for j in range(len(dict[i])):
             dict[i][j] = sorted(dict[i][j])
-        print(dict[i], "\n\t\t", i, "\n")
+        if num < 30:
+            print(dict[i], "\n\t\t", i, "\n")
     return dict
 
 
-def run(name):
+def run(name, fifo):
     db_header = shelve.open(name + " - header")
     periods = db_header["periods"]
     for k in db_header.keys():
@@ -56,24 +57,31 @@ def run(name):
         db_list.append((k, db_data[k]))
 
     # db_list.sort(key=lambda x: x[0])
-    db_list.sort(key=mip)
+    if fifo:
+        db_list.sort(key=mip)
+    else:
+        db_list.sort(key=mip)
     db_data.close()
 
     group(db_list)
+    if fifo:
+        print((min(db_list, key=mip)))
+        print("MIN: ", round(mip(min(db_list, key=lambda x: x[1][0][0]))[0] / periods, 2))
+    else:
+        print(min(db_list, key=mip), "\n", min(db_list, key=batch), "\n", min(db_list, key=fcfs))
+        print("MIN: ", round(mip(min(db_list, key=mip)) / periods, 2),
+            round(batch(min(db_list, key=batch)) / periods, 2),
+            round(fcfs(min(db_list, key=fcfs)) / periods, 2))
 
-    print(min(db_list, key=mip), "\n", min(db_list, key=batch), "\n", min(db_list, key=fifo))
-    print("MIN: ", round(mip(min(db_list, key=mip)) / periods, 2),
-          round(batch(min(db_list, key=batch)) / periods, 2),
-          round(fifo(min(db_list, key=fifo)) / periods, 2))
 
 def diffs_batch_mip(name):
     db = shelve.open(name)
     for k in db.keys():
         if not db[k][1] == db[k][2]:
-            print(k, ": ",db[k])
+            print(k, ": ", db[k])
     db.close()
 
 if __name__ == "__main__":
     print("HERE I AMeu")
-    name = "nachstellung alter ergebnisse - new Q, high L0, high var"
-    run(name)
+    name = "equal retailers test"
+    run(name, False)
