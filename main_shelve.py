@@ -90,13 +90,13 @@ def execute_single_run(current):
 
     if not only_fifo:
         # mip
-        settings.no_batch_splitting = False
+        settings.full_batches = False
         sim.run(FIFO=False)
         value_mip = create_stats(sim.collect_statistics())
         sim.reset()
 
         # mip - no batch splitting
-        settings.no_batch_splitting = True
+        settings.full_batches = True
         sim.run(FIFO=False)
         value_batch = create_stats(sim.collect_statistics())
         sim.reset()
