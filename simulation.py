@@ -37,12 +37,14 @@ def binomial(n, p):
 
 class Simulation:
 
-    def __init__(self, num_retailers=2, length=100, warm_up=None, stock=100, high_var=True, high_c_shortage=True, demands=None, distribution=None, L0=2):
+    def __init__(self, num_retailers=2, length=100, warm_up=None, stock=100, high_var=True, high_c_shortage=True, demands=None, distribution=None, L0=2, h0=0.1, Li=2):
         self.length = length
-        self.warehouse = wh.Warehouse(stock=stock, lead=L0)
+        self.warehouse = wh.Warehouse(stock=stock, lead=L0, c_holding=h0)
         self.stats = None
         self.num_retailers = num_retailers
         self.warm_up = warm_up
+        self.h0 = h0
+        self.Li = Li
 
         for i in range(num_retailers):
             if demands is None:
@@ -60,7 +62,8 @@ class Simulation:
                 random = demands[i]
                 self.distribution = distribution
 
-            r = rt.Retailer(i, self.warehouse, demands=random)
+            r = rt.Retailer(i, self.warehouse, demands=random, lead=Li)
+
             if high_c_shortage:
                 r.c_shortage = 4.9
             else:

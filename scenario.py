@@ -1,21 +1,29 @@
 class Scenario:
 
-    def __init__(self, number, length, warm_up, R0, R1, R2, step0, step1, step2, repeat=1, high_var=True,
-                 high_c_shortage=True, fifo=False, run_me_as=0, demands=None, distribution=None, settings={}):
+    def __init__(self, name, length, warm_up, R0, R1, R2, step0, step1, step2, repeat=1, high_var=True,
+                 high_c_shortage=True, fifo=False, run_me_as=2, demands=None, distribution=None, settings={}):
         self.length = length
         self.warm_up = warm_up
         self.demands = demands
         self.distribution = distribution
-        self.high_c_shortage = high_c_shortage
+
+        self.h0 = 0.1
         self.L0 = 2
+        self.Li = 2
+        self.high_c_shortage = high_c_shortage
         for key in settings:
+            if key == "h0":
+                self.h0 = settings[key]
             if key == "L0":
                 self.L0 = settings[key]
+            if key == "Li":
+                self.Li = settings[key]
             if key == "high_c_shortage":
                 self.high_c_shortage = settings[key]
+
         self.fifo = fifo
         self.run_me_as = run_me_as
-        self.number = number
+        self.name = name
         self.high_var = high_var
 
         self.repeat = repeat
@@ -56,7 +64,7 @@ class Scenario:
             for r1 in range(self.R1, self.R1max + 1, self.step1):
                 for r2 in range(self.R2, self.R2max + 1, self.step2):
                     for j in range(self.repeat):
-                        if 85 < r1+r2 < 105:
+                        if 85 < r1 + r2 < 105:
                             yield (r0, r1, r2, i)
                             i += 1
 
