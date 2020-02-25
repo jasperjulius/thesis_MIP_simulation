@@ -1,5 +1,5 @@
 # -------------------------------------------------------------------------------
-# old main, used for executing scenarios, and saving results of each run of scenario to excel
+# NOT USED - old main, used for executing scenarios, and saving results of each run of scenario to excel
 # replaced by main_shelve
 # -------------------------------------------------------------------------------
 
@@ -130,6 +130,7 @@ if __name__ == '__main__':
     demands_high, distribution_high = generate_demands(periods + warm_up, True)
     demands_low, distribution_low = generate_demands(periods + warm_up, False)
 
+    #initially generated demands with generate_demands() and saved them - now, they are loaded using pickle
     with open("demands_high.txt", "rb") as f:
         demands_high = pickle.load(f)
     with open("demands_low.txt", "rb") as f:
@@ -141,5 +142,5 @@ if __name__ == '__main__':
                      1,
                      repeat=1,
                      high_var=True, run_me_as=0, demands=demands_high,
-                     distribution=distribution_high, fifo=False, settings=settings1)
+                     distribution=distribution_high, settings=settings1)
     run_scenario(s1)

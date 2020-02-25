@@ -1,3 +1,8 @@
+# -------------------------------------------------------------------------------
+# implements mathematical model underlying the MIP-based decision rules, solves the model, and returns the determined quantities to send to the retailers
+# uses gurobi-API
+# -------------------------------------------------------------------------------
+
 from gurobipy import *
 import settings
 from combine_graphs import combine_2
@@ -58,6 +63,7 @@ class MIP:
 
         return x
 
+    # creates piecewise linear function for holding costs of one retailer
     def holding_objective(self, i):
         count = 0
         graph = []
@@ -81,6 +87,7 @@ class MIP:
 
         return graph
 
+    # creates piecewise linear function for shortage costs of one retailer
     def shortage_objective(self, i):
 
         count = 0
@@ -94,20 +101,21 @@ class MIP:
             graph.append((x, graph[-1][1] + count * (graph[-1][0] - x)))
             count += 1
 
-        # insert final (first) point with x = 0, maximal y calculated as current final y in list + todo: count (+1?)
+        # insert final (first) point with x = 0, maximal y calculated as current final y in list
         graph.append((0, graph[-1][1] + count * (graph[-1][0])))
         graph.reverse()
 
         graph_out_of_range = [g for g in graph if g[0] > self.p_stock_warehouse or g[0] > self.max_orders[i]]
         for i in range(len(graph_out_of_range) - 1):
             del graph[-1]
-        if not graph or len(graph) < 2:  # todo: unsauber; wird eh nie erreicht meine ich, raus einfach?
+        if not graph or len(graph) < 2:
             del graph[:]
             graph.append((0, 0))
             graph.append((1, 0))
 
         return graph
 
+    # determines the optimal quantities to send to each retailer
     def optimal_quantities(self):
 
         num_i = len(self.p_lead)

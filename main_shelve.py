@@ -6,7 +6,7 @@
 
 import sys
 
-gurobipath = "C:\gurobi901\win64\python37\lib\gurobipy"
+gurobipath = "C:\gurobi901\win64\python37\lib\gurobipy"     # path to gurobi library - has to be adjusted accordingly when running on another system
 sys.path.append(gurobipath)
 
 import time
@@ -25,15 +25,11 @@ import pickle
 parallel = False
 
 
-def total_costs(total_sep):
-    total = 0
-    for i in total_sep:
-        total += sum(i)
-    return total
-
-
 def create_stats(stats):
-    total_c = total_costs(stats)
+    total_c = 0
+    for i in stats:
+        total_c += sum(i)
+
     stats_round = [[round(i, 1) for i in list] for list in stats]
     return round(total_c, 1), stats_round
 
@@ -46,7 +42,8 @@ def group_stats(full_stats):
             result.append(j)
     return result
 
-
+# runs one scenario without using parallel processing
+#   has to be used when running on MacOS, since MacOS prohibits use of multiple processes
 def run_scenario_sequential(scen):
     global scenario
     scenario = scen
@@ -55,16 +52,20 @@ def run_scenario_sequential(scen):
         execute_single_run(run)
 
 
-def init(l, s):
-    global lock
-    lock = l
-    global scenario
-    scenario = s
-    global parallel
-    parallel = True
 
 
+# runs one scenario using parallel processing - the many simulation runs are distributed to the processes, which all add the calculated costs to the same DB for later analysis
+#   doesn't run on MacOS, since MacOS prohibits python to use multiple processes - run_scenario_sequential() has to be used on MacOS
 def run_scenario_parallel(scen):
+
+    def init(l, s):
+        global lock
+        lock = l
+        global scenario
+        scenario = s
+        global parallel
+        parallel = True
+
     scenario = scen
     lock = mp.Lock()
 
@@ -73,9 +74,9 @@ def run_scenario_parallel(scen):
     pool.map(execute_single_run, r)
 
 
+# used to execute one single run (one combination of Rs belonging to a scenario)
 def execute_single_run(current):
     global scenario
-    only_fifo = scenario.fifo
     sim = simulation.Simulation(length=scenario.length, warm_up=scenario.warm_up, stock=60,
                                 high_var=scenario.high_var,
                                 high_c_shortage=scenario.high_c_shortage, demands=scenario.demands,
@@ -88,18 +89,17 @@ def execute_single_run(current):
     sim.warehouse.retailers[0].R = current[1]
     sim.warehouse.retailers[1].R = current[2]
 
-    if not only_fifo:
-        # mip
-        settings.full_batches = False
-        sim.run(FIFO=False)
-        value_mip = create_stats(sim.collect_statistics())
-        sim.reset()
+    # mip
+    settings.full_batches = False
+    sim.run(FIFO=False)
+    value_mip = create_stats(sim.collect_statistics())
+    sim.reset()
 
-        # mip - no batch splitting
-        settings.full_batches = True
-        sim.run(FIFO=False)
-        value_batch = create_stats(sim.collect_statistics())
-        sim.reset()
+    # mip - no batch splitting
+    settings.full_batches = True
+    sim.run(FIFO=False)
+    value_batch = create_stats(sim.collect_statistics())
+    sim.reset()
 
     # fifo
     sim.run(FIFO=True)
@@ -110,15 +110,12 @@ def execute_single_run(current):
     if parallel:
         lock.acquire()
     with shelve.open(scenario.name) as db:
-        if only_fifo:
-            db[key] = (value_fifo,)
-        else:
-            value = group_stats((value_mip, value_batch, value_fifo))
-            db[key] = value
+        value = group_stats((value_mip, value_batch, value_fifo))
+        db[key] = value
     if parallel:
         lock.release()
 
-
+# function for generating stochastic demands for each retailer - was used to generate demands_high.txt, and demands_low.txt
 def generate_demands(periods, high_var):
     random = []
     if not high_var:
@@ -127,7 +124,6 @@ def generate_demands(periods, high_var):
         dist = binomial(n, p)
         for i in range(2):
             demand = rand.binomial(n, p, periods)
-            print("low var - avg:", sum(demand) / len(demand))
             random.append(demand)
     else:
         n = 20
@@ -135,7 +131,6 @@ def generate_demands(periods, high_var):
         dist = neg_binomial(n, p)
         for i in range(2):
             demand = rand.negative_binomial(n, p, periods)
-            print("high var - avg:", sum(demand) / len(demand))
             random.append(demand)
     return random, dist
 
@@ -147,12 +142,7 @@ if __name__ == '__main__':
     demands_high, distribution_high = generate_demands(periods + warm_up, True)
     demands_low, distribution_low = generate_demands(periods + warm_up, False)
 
-    flag = False
-    if flag:
-        with open("demands_high.txt", "wb") as f:
-            pickle.dump(demands_high, f)
-        with open("demands_low.txt", "wb") as f:
-            pickle.dump(demands_low, f)
+    #initially generated demands with generate_demands() and saved them - now, they are loaded using pickle
     with open("demands_high.txt", "rb") as f:
         demands_high = pickle.load(f)
     with open("demands_low.txt", "rb") as f:
@@ -263,7 +253,7 @@ if __name__ == '__main__':
         pickle.dump(all_names, f)
     for scenario in scenarios:
         before = time.time()
-        run_scenario_parallel(scenario)
+        run_scenario_sequential(scenario)     # change to "run_scenario_sequential(scenario)" when running on MacOS
         after = time.time()
         db = shelve.open(scenario.name + " - header")
         observed_average = [round(sum(i) / len(i), 4) for i in scenario.demands]
