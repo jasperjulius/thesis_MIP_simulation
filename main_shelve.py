@@ -127,6 +127,7 @@ def generate_demands(periods, high_var):
         dist = binomial(n, p)
         for i in range(2):
             demand = rand.binomial(n, p, periods)
+            print("low var - avg:", sum(demand) / len(demand))
             random.append(demand)
     else:
         n = 20
@@ -134,14 +135,15 @@ def generate_demands(periods, high_var):
         dist = neg_binomial(n, p)
         for i in range(2):
             demand = rand.negative_binomial(n, p, periods)
+            print("high var - avg:", sum(demand) / len(demand))
             random.append(demand)
     return random, dist
 
 
 if __name__ == '__main__':
 
-    periods = 500
-    warm_up = 10
+    periods = 50000
+    warm_up = 100
     demands_high, distribution_high = generate_demands(periods + warm_up, True)
     demands_low, distribution_low = generate_demands(periods + warm_up, False)
 
@@ -261,7 +263,7 @@ if __name__ == '__main__':
         pickle.dump(all_names, f)
     for scenario in scenarios:
         before = time.time()
-        run_scenario_sequential(scenario)
+        run_scenario_parallel(scenario)
         after = time.time()
         db = shelve.open(scenario.name + " - header")
         observed_average = [round(sum(i) / len(i), 4) for i in scenario.demands]
