@@ -118,7 +118,7 @@ def run_scenario(scenario):
     sheet["AY12"] = sim.warehouse.retailers[1].c_holding
     sheet["AZ12"] = sim.warehouse.retailers[1].c_shortage
 
-    name = "generated_sheets/" + str(scenario.number) + ".xlsx"
+    name = "generated_sheets/" + str(scenario.name) + ".xlsx"
     wb.save(name)
 
 

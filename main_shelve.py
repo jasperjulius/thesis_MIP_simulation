@@ -109,7 +109,7 @@ def execute_single_run(current):
     # save result of run into database
     if parallel:
         lock.acquire()
-    with shelve.open(scenario.number) as db:
+    with shelve.open(scenario.name) as db:
         if only_fifo:
             db[key] = (value_fifo,)
         else:
@@ -140,12 +140,12 @@ def generate_demands(periods, high_var):
 
 if __name__ == '__main__':
 
-    periods = 50000
-    warm_up = 100
+    periods = 500
+    warm_up = 10
     demands_high, distribution_high = generate_demands(periods + warm_up, True)
     demands_low, distribution_low = generate_demands(periods + warm_up, False)
 
-    flag = True
+    flag = False
     if flag:
         with open("demands_high.txt", "wb") as f:
             pickle.dump(demands_high, f)
@@ -261,7 +261,7 @@ if __name__ == '__main__':
         pickle.dump(all_names, f)
     for scenario in scenarios:
         before = time.time()
-        run_scenario_parallel(scenario)
+        run_scenario_sequential(scenario)
         after = time.time()
         db = shelve.open(scenario.name + " - header")
         observed_average = [round(sum(i) / len(i), 4) for i in scenario.demands]
