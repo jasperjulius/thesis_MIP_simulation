@@ -1,5 +1,11 @@
+# -------------------------------------------------------------------------------
+# used to combine multiple piecewise linear objective functions into one
+#   implemented to lower run time
+# -------------------------------------------------------------------------------
+
 from math import trunc
 from math import ceil
+
 
 def combine(g1, c1, g2, c2, g3, c3):
     graphs = [g1, g2, g3]
