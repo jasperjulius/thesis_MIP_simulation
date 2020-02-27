@@ -217,8 +217,6 @@ if __name__ == '__main__':
     scenarios.append(sc.Scenario("DIESE, L3-1, high var, high c_s, low h0", periods, warm_up, r1, r2, r3, 15, 1, 1,
                                  high_var=True, demands=demands_high,
                                  distribution=distribution_high, settings=settings1))
-    scenarios = []
-
     scenarios.append(sc.Scenario("DIESE L3-1, low var, high c_s, low h0", periods, warm_up, r1, r2, r3, 15, 1, 1,
                                  high_var=False, demands=demands_low,
                                  distribution=distribution_low, settings=settings1))
@@ -268,5 +266,6 @@ if __name__ == '__main__':
         db["distribution"] = scenario.distribution
         db["runtime hours"] = round((after - before) / 3600, 2)
         db.close()
+        # reader.run(scenario.name)
         print("done with scenario", i, ":", scenario.name)
         i += 1
