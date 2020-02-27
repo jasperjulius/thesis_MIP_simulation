@@ -246,7 +246,8 @@ if __name__ == '__main__':
     for s in scenarios:
         all_names.append(s.name)
     with open("scenario_names.txt", "wb") as f:
-        pickle.dump(all_names, f)
+        pass
+        # pickle.dump(all_names, f)
     i = 0
     for scenario in scenarios:
         before = time.time()
