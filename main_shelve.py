@@ -51,20 +51,18 @@ def run_scenario_sequential(scen):
     for run in r:
         execute_single_run(run)
 
-
+def init(l, s):
+    global lock
+    lock = l
+    global scenario
+    scenario = s
+    global parallel
+    parallel = True
 
 
 # runs one scenario using parallel processing - the many simulation runs are distributed to the processes, which all add the calculated costs to the same DB for later analysis
 #   doesn't run on MacOS, since MacOS prohibits python to use multiple processes - run_scenario_sequential() has to be used on MacOS
 def run_scenario_parallel(scen):
-
-    def init(l, s):
-        global lock
-        lock = l
-        global scenario
-        scenario = s
-        global parallel
-        parallel = True
 
     scenario = scen
     lock = mp.Lock()
@@ -81,8 +79,6 @@ def execute_single_run(current):
                                 high_var=scenario.high_var,
                                 high_c_shortage=scenario.high_c_shortage, demands=scenario.demands,
                                 distribution=scenario.distribution, L0=scenario.L0, h0=scenario.h0)
-    print(current)
-    print(round(((current[3] / scenario.duration) * 100), 2), "%")
     key = str(current[0]) + ", " + str(current[1]) + ", " + str(current[2])
 
     sim.warehouse.R = current[0]
@@ -183,7 +179,7 @@ if __name__ == '__main__':
 
 
     # block: (L0, Li) = (1,3)
-    r1, r2, r3 = (0, 45), (25, 90), (25, 90)
+    r1, r2, r3 = (0, 60), (25, 90), (25, 90)
     settings1 = {"L0": 1, "Li": 3, "high_c_shortage": True, "h0": 0.05}
     scenarios.append(sc.Scenario("DIESE, L1-3, high var, high c_s, low h0", periods, warm_up, r1, r2, r3, 15, 1, 1,
                                  high_var=True, demands=demands_high,
@@ -221,6 +217,8 @@ if __name__ == '__main__':
     scenarios.append(sc.Scenario("DIESE, L3-1, high var, high c_s, low h0", periods, warm_up, r1, r2, r3, 15, 1, 1,
                                  high_var=True, demands=demands_high,
                                  distribution=distribution_high, settings=settings1))
+    scenarios = []
+
     scenarios.append(sc.Scenario("DIESE L3-1, low var, high c_s, low h0", periods, warm_up, r1, r2, r3, 15, 1, 1,
                                  high_var=False, demands=demands_low,
                                  distribution=distribution_low, settings=settings1))
@@ -251,9 +249,10 @@ if __name__ == '__main__':
         all_names.append(s.name)
     with open("scenario_names.txt", "wb") as f:
         pickle.dump(all_names, f)
+    i = 0
     for scenario in scenarios:
         before = time.time()
-        run_scenario_sequential(scenario)     # change to "run_scenario_sequential(scenario)" when running on MacOS
+        run_scenario_parallel(scenario)     # change to "run_scenario_sequential(scenario)" when running on MacOS
         after = time.time()
         db = shelve.open(scenario.name + " - header")
         observed_average = [round(sum(i) / len(i), 4) for i in scenario.demands]
@@ -269,5 +268,5 @@ if __name__ == '__main__':
         db["distribution"] = scenario.distribution
         db["runtime hours"] = round((after - before) / 3600, 2)
         db.close()
-        print("done with scenario", scenario.name)
-        reader.run(scenario.name, False)
+        print("done with scenario", i, ":", scenario.name)
+        i += 1

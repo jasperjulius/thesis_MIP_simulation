@@ -3,7 +3,7 @@
 # -------------------------------------------------------------------------------
 
 import shelve
-
+import pickle
 
 def mip(elem):
     return elem[1][0]
@@ -45,15 +45,16 @@ def group(db_list):
         for j in range(len(dict[i])):
             dict[i][j] = sorted(dict[i][j])
         if num < 30:
-            print(dict[i], "\n\t\t", i, "\n")
+            pass
+            # print(dict[i], "\n\t\t", i, "\n")
     return dict
 
 
 def run(name, fifo):
     db_header = shelve.open(name + " - header")
-    periods = db_header["periods"]
     for k in db_header.keys():
         print(k, ": ", db_header[k])
+    periods = db_header["periods"]
     db_header.close()
     db_data = shelve.open(name)
     db_list = []
@@ -73,9 +74,9 @@ def run(name, fifo):
         print("MIN: ", round(mip(min(db_list, key=lambda x: x[1][0][0]))[0] / periods, 2))
     else:
         print(min(db_list, key=mip), "\n", min(db_list, key=batch), "\n", min(db_list, key=fcfs))
-        print("MIN: ", round(mip(min(db_list, key=mip)) / periods, 2),
-            round(batch(min(db_list, key=batch)) / periods, 2),
-            round(fcfs(min(db_list, key=fcfs)) / periods, 2))
+        print("MIN: ", round(mip(min(db_list, key=mip)) / periods, 4),
+            round(batch(min(db_list, key=batch)) / periods, 4),
+            round(fcfs(min(db_list, key=fcfs)) / periods, 4))
 
 
 def diffs_batch_mip(name):
@@ -86,6 +87,10 @@ def diffs_batch_mip(name):
     db.close()
 
 if __name__ == "__main__":
-    print("HERE I AMeu")
-    name = "equal retailers test"
-    run(name, False)
+    with open("scenario_names.txt", "rb") as f:
+        all_names = pickle.load(f)
+    for name in all_names:
+        run(name, False)
+        print("")
+        print("")
+        print("")
