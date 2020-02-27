@@ -6,7 +6,7 @@
 
 import sys
 
-gurobipath = "C:\gurobi901\win64\python37\lib\gurobipy"     # path to gurobi library - has to be adjusted accordingly when running on another system
+gurobipath = "C:\gurobi901\win64\python37\lib\gurobipy"  # path to gurobi library - has to be adjusted accordingly when running on another system
 sys.path.append(gurobipath)
 
 import time
@@ -42,6 +42,7 @@ def group_stats(full_stats):
             result.append(j)
     return result
 
+
 # runs one scenario without using parallel processing
 #   has to be used when running on MacOS, since MacOS prohibits use of multiple processes
 def run_scenario_sequential(scen):
@@ -50,6 +51,7 @@ def run_scenario_sequential(scen):
     r = scenario.get_iterator()
     for run in r:
         execute_single_run(run)
+
 
 def init(l, s):
     global lock
@@ -63,7 +65,6 @@ def init(l, s):
 # runs one scenario using parallel processing - the many simulation runs are distributed to the processes, which all add the calculated costs to the same DB for later analysis
 #   doesn't run on MacOS, since MacOS prohibits python to use multiple processes - run_scenario_sequential() has to be used on MacOS
 def run_scenario_parallel(scen):
-
     scenario = scen
     lock = mp.Lock()
 
@@ -111,6 +112,7 @@ def execute_single_run(current):
     if parallel:
         lock.release()
 
+
 # function for generating stochastic demands for each retailer - was used to generate demands_high.txt, and demands_low.txt
 def generate_demands(periods, high_var):
     random = []
@@ -138,7 +140,7 @@ if __name__ == '__main__':
     demands_high, distribution_high = generate_demands(periods + warm_up, True)
     demands_low, distribution_low = generate_demands(periods + warm_up, False)
 
-    #initially generated demands with generate_demands() and saved them - now, they are loaded using pickle
+    # initially generated demands with generate_demands() and saved them - now, they are loaded using pickle
     with open("demands_high.txt", "rb") as f:
         demands_high = pickle.load(f)
     with open("demands_low.txt", "rb") as f:
@@ -146,102 +148,166 @@ if __name__ == '__main__':
 
     scenarios = []
     # block: (L0, Li) = (2,2)
+    l2_low_1, l2_low_2, l2_low_3 = (15, 60), (20, 64), (20, 64)
+    l2_high_1, l2_high_2, l2_high_3 = (15, 60), (20, 74), (20, 74)
     r1, r2, r3 = (15, 60), (25, 65), (25, 65)
+
     settings1 = {"L0": 2, "Li": 2, "high_c_shortage": True, "h0": 0.05}
-    scenarios.append(sc.Scenario("DIESE, L2-2, high var, high c_s, low h0", periods, warm_up, r1, r2, r3, 15, 1, 1,
-                                 high_var=True, demands=demands_high,
-                                 distribution=distribution_high, settings=settings1))
-    scenarios.append(sc.Scenario("DIESE L2-2, low var, high c_s, low h0", periods, warm_up, r1, r2, r3, 15, 1, 1,
-                                 high_var=False, demands=demands_low,
-                                 distribution=distribution_low, settings=settings1))
+    scenarios.append(
+        sc.Scenario("DIESE, L2-2, high var, high c_s, low h0", periods, warm_up, l2_high_1, (20, 24), l2_high_3, 15, 1,
+                    1,
+                    high_var=True, demands=demands_high,
+                    distribution=distribution_high, settings=settings1))
+    # delete
+    scenarios.append(
+        sc.Scenario("DIESE, L2-2, high var, high c_s, low h0", periods, warm_up, l2_high_1, (66, 74), l2_high_3, 15, 1,
+                    1,
+                    high_var=True, demands=demands_high,
+                    distribution=distribution_high, settings=settings1))
+    scenarios.append(
+        sc.Scenario("DIESE L2-2, low var, high c_s, low h0", periods, warm_up, l2_low_1, (20, 24), l2_low_3, 15, 1, 1,
+                    high_var=False, demands=demands_low,
+                    distribution=distribution_low, settings=settings1))
     settings2 = {"L0": 2, "Li": 2, "high_c_shortage": False, "h0": 0.05}
-    scenarios.append(sc.Scenario("DIESE, L2-2, high var, low c_s, low h0", periods, warm_up, r1, r2, r3, 15, 1, 1,
-                                 high_var=True, demands=demands_high,
-                                 distribution=distribution_high, settings=settings2))
-    scenarios.append(sc.Scenario("DIESE L2-2, low var, low c_s, low h0", periods, warm_up, r1, r2, r3, 15, 1, 1,
-                                 high_var=False, demands=demands_low,
-                                 distribution=distribution_low, settings=settings2))
- 
+    scenarios.append(
+        sc.Scenario("DIESE, L2-2, high var, low c_s, low h0", periods, warm_up, l2_high_1, (20, 24), l2_high_3, 15, 1,
+                    1,
+                    high_var=True, demands=demands_high,
+                    distribution=distribution_high, settings=settings2))
+    # delete
+    scenarios.append(
+        sc.Scenario("DIESE, L2-2, high var, low c_s, low h0", periods, warm_up, l2_high_1, (66, 74), l2_high_3, 15, 1,
+                    1,
+                    high_var=True, demands=demands_high,
+                    distribution=distribution_high, settings=settings2))
+
+    scenarios.append(
+        sc.Scenario("DIESE L2-2, low var, low c_s, low h0", periods, warm_up, l2_low_1, (20, 24), l2_low_3, 15, 1, 1,
+                    high_var=False, demands=demands_low,
+                    distribution=distribution_low, settings=settings2))
+
     settings1 = {"L0": 2, "Li": 2, "high_c_shortage": True, "h0": 0.1}
-    scenarios.append(sc.Scenario("DIESE, L2-2, high var, high c_s, high h0", periods, warm_up, r1, r2, r3, 15, 1, 1,
-                                 high_var=True, demands=demands_high,
-                                 distribution=distribution_high, settings=settings1))
-    scenarios.append(sc.Scenario("DIESE L2-2, low var, high c_s, high h0", periods, warm_up, r1, r2, r3, 15, 1, 1,
-                                 high_var=False, demands=demands_low,
-                                 distribution=distribution_low, settings=settings1))
+    scenarios.append(
+        sc.Scenario("DIESE, L2-2, high var, high c_s, high h0", periods, warm_up, l2_high_1, (20, 24), l2_high_3, 15, 1,
+                    1,
+                    high_var=True, demands=demands_high,
+                    distribution=distribution_high, settings=settings1))
+    # delete
+    scenarios.append(
+        sc.Scenario("DIESE, L2-2, high var, high c_s, high h0", periods, warm_up, l2_high_1, (66, 74), l2_high_3, 15, 1,
+                    1,
+                    high_var=True, demands=demands_high,
+                    distribution=distribution_high, settings=settings1))
+
+    scenarios.append(
+        sc.Scenario("DIESE L2-2, low var, high c_s, high h0", periods, warm_up, l2_low_1, (20, 24), l2_low_3, 15, 1, 1,
+                    high_var=False, demands=demands_low,
+                    distribution=distribution_low, settings=settings1))
     settings2 = {"L0": 2, "Li": 2, "high_c_shortage": False, "h0": 0.1}
-    scenarios.append(sc.Scenario("DIESE, L2-2, high var, low c_s, high h0", periods, warm_up, r1, r2, r3, 15, 1, 1,
-                                 high_var=True, demands=demands_high,
-                                 distribution=distribution_high, settings=settings2))
-    scenarios.append(sc.Scenario("DIESE L2-2, low var, low c_s, high h0", periods, warm_up, r1, r2, r3, 15, 1, 1,
-                                 high_var=False, demands=demands_low,
-                                 distribution=distribution_low, settings=settings2))
+    scenarios.append(
+        sc.Scenario("DIESE, L2-2, high var, low c_s, high h0", periods, warm_up, l2_high_1, (20, 24), l2_high_3, 15, 1,
+                    1,
+                    high_var=True, demands=demands_high,
+                    distribution=distribution_high, settings=settings2))
+    # delete
+    scenarios.append(
+        sc.Scenario("DIESE, L2-2, high var, low c_s, high h0", periods, warm_up, l2_high_1, (66, 74), l2_high_3, 15, 1,
+                    1,
+                    high_var=True, demands=demands_high,
+                    distribution=distribution_high, settings=settings2))
+    scenarios.append(
+        sc.Scenario("DIESE L2-2, low var, low c_s, high h0", periods, warm_up, l2_low_1, (20, 24), l2_low_3, 15, 1, 1,
+                    high_var=False, demands=demands_low,
+                    distribution=distribution_low, settings=settings2))
+
+    # noinspection PyUnreachableCode
+    if False:
+        l3_low_1, l3_low_2, l3_low_3 = (15, 60), (30, 64), (30, 64)
+        l3_high_1, l3_high_2, l3_high_3 = (15, 60), (30, 74), (30, 74)
+        # block: (L0, Li) = (1,3)
+        r1, r2, r3 = (0, 60), (25, 90), (25, 90)
+        settings1 = {"L0": 1, "Li": 3, "high_c_shortage": True, "h0": 0.05}
+        scenarios.append(
+            sc.Scenario("DIESE, L1-3, high var, high c_s, low h0", periods, warm_up,  l3_high_1, l3_high_2, l3_high_3, 15, 1,
+                        1,
+                        high_var=True, demands=demands_high,
+                        distribution=distribution_high, settings=settings1))
+        scenarios.append(
+            sc.Scenario("DIESE L1-3, low var, high c_s, low h0", periods, warm_up, l3_low_1, l3_low_2, l3_low_3, 15, 1, 1,
+                        high_var=False, demands=demands_low,
+                        distribution=distribution_low, settings=settings1))
+        settings2 = {"L0": 1, "Li": 3, "high_c_shortage": False, "h0": 0.05}
+        scenarios.append(
+            sc.Scenario("DIESE, L1-3, high var, low c_s, low h0", periods, warm_up,  l3_high_1, l3_high_2, l3_high_3, 15, 1,
+                        1,
+                        high_var=True, demands=demands_high,
+                        distribution=distribution_high, settings=settings2))
+        scenarios.append(
+            sc.Scenario("DIESE L1-3, low var, low c_s, low h0", periods, warm_up, l3_low_1, l3_low_2, l3_low_3, 15, 1, 1,
+                        high_var=False, demands=demands_low,
+                        distribution=distribution_low, settings=settings2))
+
+        settings1 = {"L0": 1, "Li": 3, "high_c_shortage": True, "h0": 0.1}
+        scenarios.append(
+            sc.Scenario("DIESE, L1-3, high var, high c_s, high h0", periods, warm_up,  l3_high_1, l3_high_2, l3_high_3, 15, 1,
+                        1,
+                        high_var=True, demands=demands_high,
+                        distribution=distribution_high, settings=settings1))
+        scenarios.append(
+            sc.Scenario("DIESE L1-3, low var, high c_s, high h0", periods, warm_up, l3_low_1, l3_low_2, l3_low_3, 15, 1,
+                        1,
+                        high_var=False, demands=demands_low,
+                        distribution=distribution_low, settings=settings1))
+        settings2 = {"L0": 1, "Li": 3, "high_c_shortage": False, "h0": 0.1}
+        scenarios.append(
+            sc.Scenario("DIESE, L1-3, high var, low c_s, high h0", periods, warm_up, l3_high_1, l3_high_2, l3_high_3, 15, 1,
+                        1,
+                        high_var=True, demands=demands_high,
+                        distribution=distribution_high, settings=settings2))
+        scenarios.append(
+            sc.Scenario("DIESE L1-3, low var, low c_s, high h0", periods, warm_up, l3_low_1, l3_low_2, l3_low_3, 15, 1, 1,
+                        high_var=False, demands=demands_low,
+                        distribution=distribution_low, settings=settings2))
 
 
-    # block: (L0, Li) = (1,3)
-    r1, r2, r3 = (0, 60), (25, 90), (25, 90)
-    settings1 = {"L0": 1, "Li": 3, "high_c_shortage": True, "h0": 0.05}
-    scenarios.append(sc.Scenario("DIESE, L1-3, high var, high c_s, low h0", periods, warm_up, r1, r2, r3, 15, 1, 1,
-                                 high_var=True, demands=demands_high,
-                                 distribution=distribution_high, settings=settings1))
-    scenarios.append(sc.Scenario("DIESE L1-3, low var, high c_s, low h0", periods, warm_up, r1, r2, r3, 15, 1, 1,
-                                 high_var=False, demands=demands_low,
-                                 distribution=distribution_low, settings=settings1))
-    settings2 = {"L0": 1, "Li": 3, "high_c_shortage": False, "h0": 0.05}
-    scenarios.append(sc.Scenario("DIESE, L1-3, high var, low c_s, low h0", periods, warm_up, r1, r2, r3, 15, 1, 1,
-                                 high_var=True, demands=demands_high,
-                                 distribution=distribution_high, settings=settings2))
-    scenarios.append(sc.Scenario("DIESE L1-3, low var, low c_s, low h0", periods, warm_up, r1, r2, r3, 15, 1, 1,
-                                 high_var=False, demands=demands_low,
-                                 distribution=distribution_low, settings=settings2))
 
-    settings1 = {"L0": 1, "Li": 3, "high_c_shortage": True, "h0": 0.1}
-    scenarios.append(sc.Scenario("DIESE, L1-3, high var, high c_s, high h0", periods, warm_up, r1, r2, r3, 15, 1, 1,
-                                 high_var=True, demands=demands_high,
-                                 distribution=distribution_high, settings=settings1))
-    scenarios.append(sc.Scenario("DIESE L1-3, low var, high c_s, high h0", periods, warm_up, r1, r2, r3, 15, 1, 1,
-                                 high_var=False, demands=demands_low,
-                                 distribution=distribution_low, settings=settings1))
-    settings2 = {"L0": 1, "Li": 3, "high_c_shortage": False, "h0": 0.1}
-    scenarios.append(sc.Scenario("DIESE, L1-3, high var, low c_s, high h0", periods, warm_up, r1, r2, r3, 15, 1, 1,
-                                 high_var=True, demands=demands_high,
-                                 distribution=distribution_high, settings=settings2))
-    scenarios.append(sc.Scenario("DIESE L1-3, low var, low c_s, high h0", periods, warm_up, r1, r2, r3, 15, 1, 1,
-                                 high_var=False, demands=demands_low,
-                                 distribution=distribution_low, settings=settings2))
+        l1_low_1, l1_low_2, l1_low_3 = (15, 60), (10, 64), (10, 64)
+        l1_high_1, l1_high_2, l1_high_3 = (15, 60), (10, 74), (10, 74)
+        # block: (L0, Li) = (3,1)
+        r1, r2, r3 = (15, 75), (10, 65), (10, 65)
+        settings1 = {"L0": 3, "Li": 1, "high_c_shortage": True, "h0": 0.05}
+        scenarios.append(sc.Scenario("DIESE, L3-1, high var, high c_s, low h0", periods, warm_up, l1_high_1, (66, 74), l1_high_3, 15, 1, 1,
+                                     high_var=True, demands=demands_high,
+                                     distribution=distribution_high, settings=settings1))
+        if False:
+            scenarios.append(sc.Scenario("DIESE L3-1, low var, high c_s, low h0", periods, warm_up, l1_low_1, l1_low_2, l1_low_3, 15, 1, 1,
+                                         high_var=False, demands=demands_low,
+                                         distribution=distribution_low, settings=settings1))
+        settings2 = {"L0": 3, "Li": 1, "high_c_shortage": False, "h0": 0.05}
+        scenarios.append(sc.Scenario("DIESE, L3-1, high var, low c_s, low h0", periods, warm_up, l1_high_1, (66, 74), l1_high_3, 15, 1, 1,
+                                     high_var=True, demands=demands_high,
+                                     distribution=distribution_high, settings=settings2))
+        if False:
+            scenarios.append(sc.Scenario("DIESE L3-1, low var, low c_s, low h0", periods, warm_up, l1_low_1, l1_low_2, l1_low_3, 15, 1, 1,
+                                         high_var=False, demands=demands_low,
+                                         distribution=distribution_low, settings=settings2))
 
-
-    # block: (L0, Li) = (3,1)
-    r1, r2, r3 = (15, 75), (10, 65), (10, 65)
-    settings1 = {"L0": 3, "Li": 1, "high_c_shortage": True, "h0": 0.05}
-    scenarios.append(sc.Scenario("DIESE, L3-1, high var, high c_s, low h0", periods, warm_up, r1, r2, r3, 15, 1, 1,
-                                 high_var=True, demands=demands_high,
-                                 distribution=distribution_high, settings=settings1))
-    scenarios.append(sc.Scenario("DIESE L3-1, low var, high c_s, low h0", periods, warm_up, r1, r2, r3, 15, 1, 1,
-                                 high_var=False, demands=demands_low,
-                                 distribution=distribution_low, settings=settings1))
-    settings2 = {"L0": 3, "Li": 1, "high_c_shortage": False, "h0": 0.05}
-    scenarios.append(sc.Scenario("DIESE, L3-1, high var, low c_s, low h0", periods, warm_up, r1, r2, r3, 15, 1, 1,
-                                 high_var=True, demands=demands_high,
-                                 distribution=distribution_high, settings=settings2))
-    scenarios.append(sc.Scenario("DIESE L3-1, low var, low c_s, low h0", periods, warm_up, r1, r2, r3, 15, 1, 1,
-                                 high_var=False, demands=demands_low,
-                                 distribution=distribution_low, settings=settings2))
-
-    settings1 = {"L0": 3, "Li": 1, "high_c_shortage": True, "h0": 0.1}
-    scenarios.append(sc.Scenario("DIESE, L3-1, high var, high c_s, high h0", periods, warm_up, r1, r2, r3, 15, 1, 1,
-                                 high_var=True, demands=demands_high,
-                                 distribution=distribution_high, settings=settings1))
-    scenarios.append(sc.Scenario("DIESE L3-1, low var, high c_s, high h0", periods, warm_up, r1, r2, r3, 15, 1, 1,
-                                 high_var=False, demands=demands_low,
-                                 distribution=distribution_low, settings=settings1))
-    settings2 = {"L0": 3, "Li": 1, "high_c_shortage": False, "h0": 0.1}
-    scenarios.append(sc.Scenario("DIESE, L3-1, high var, low c_s, high h0", periods, warm_up, r1, r2, r3, 15, 1, 1,
-                                 high_var=True, demands=demands_high,
-                                 distribution=distribution_high, settings=settings2))
-    scenarios.append(sc.Scenario("DIESE L3-1, low var, low c_s, high h0", periods, warm_up, r1, r2, r3, 15, 1, 1,
-                                 high_var=False, demands=demands_low,
-                                 distribution=distribution_low, settings=settings2))
+        settings1 = {"L0": 3, "Li": 1, "high_c_shortage": True, "h0": 0.1}
+        scenarios.append(sc.Scenario("DIESE, L3-1, high var, high c_s, high h0", periods, warm_up, l1_high_1, (66, 74), l1_high_3, 15, 1, 1,
+                                     high_var=True, demands=demands_high,
+                                     distribution=distribution_high, settings=settings1))
+        if False:
+            scenarios.append(sc.Scenario("DIESE L3-1, low var, high c_s, high h0", periods, warm_up, l1_low_1, l1_low_2, l1_low_3, 15, 1, 1,
+                                         high_var=False, demands=demands_low,
+                                         distribution=distribution_low, settings=settings1))
+        settings2 = {"L0": 3, "Li": 1, "high_c_shortage": False, "h0": 0.1}
+        scenarios.append(sc.Scenario("DIESE, L3-1, high var, low c_s, high h0", periods, warm_up, l1_high_1, (66, 74), l1_high_3, 15, 1, 1,
+                                     high_var=True, demands=demands_high,
+                                     distribution=distribution_high, settings=settings2))
+        if False:
+            scenarios.append(sc.Scenario("DIESE L3-1, low var, low c_s, high h0", periods, warm_up, l1_low_1, l1_low_2, l1_low_3, 15, 1, 1,
+                                         high_var=False, demands=demands_low,
+                                         distribution=distribution_low, settings=settings2))
     all_names = []
     for s in scenarios:
         all_names.append(s.name)
@@ -251,7 +317,7 @@ if __name__ == '__main__':
     i = 0
     for scenario in scenarios:
         before = time.time()
-        run_scenario_parallel(scenario)     # change to "run_scenario_sequential(scenario)" when running on MacOS
+        run_scenario_parallel(scenario)  # change to "run_scenario_sequential(scenario)" when running on MacOS
         after = time.time()
         db = shelve.open(scenario.name + " - header")
         observed_average = [round(sum(i) / len(i), 4) for i in scenario.demands]
