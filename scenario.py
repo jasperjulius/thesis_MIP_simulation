@@ -84,3 +84,6 @@ class Scenario:
             for j in range(self.repeat):
                 yield (r0, r0 - offset, r0 - offset, i)
                 i += 1
+
+    def getRanges(self):
+        return (self.R0, self.R0max), (self.R1, self.R1max), (self.R2, self.R2max)

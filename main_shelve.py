@@ -290,8 +290,9 @@ if __name__ == '__main__':
         # pickle.dump(all_names, f)
     i = 0
     for scenario in scenarios:
+        print("beginning scenario", i, ":", scenario.name, ", range:", scenario.getRanges())
         before = time.time()
-        run_scenario_sequential(scenario)  # change to "run_scenario_sequential(scenario)" when running on MacOS
+        run_scenario_parallel(scenario)  # change to "run_scenario_sequential(scenario)" when running on MacOS
         after = time.time()
         db = shelve.open(scenario.name + " - header")
         observed_average = [round(sum(i) / len(i), 4) for i in scenario.demands]

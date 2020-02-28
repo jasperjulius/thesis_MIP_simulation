@@ -87,8 +87,10 @@ def diffs_batch_mip(name):
     db.close()
 
 if __name__ == "__main__":
-    with open("scenario_names.txt", "rb") as f:
-        all_names = pickle.load(f)
+   # with open("scenario_names.txt", "rb") as f:
+    #    all_names = pickle.load(f)
+    all_names = ['DIESE, L2-2, high var, high c_s, low h0', 'DIESE L2-2, low var, high c_s, low h0', 'DIESE, L2-2, high var, low c_s, low h0', 'DIESE L2-2, low var, low c_s, low h0', 'DIESE, L2-2, high var, high c_s, high h0', 'DIESE L2-2, low var, high c_s, high h0', 'DIESE, L2-2, high var, low c_s, high h0', 'DIESE L2-2, low var, low c_s, high h0', 'DIESE, L1-3, high var, high c_s, low h0', 'DIESE L1-3, low var, high c_s, low h0', 'DIESE, L1-3, high var, low c_s, low h0', 'DIESE L1-3, low var, low c_s, low h0', 'DIESE, L1-3, high var, high c_s, high h0', 'DIESE L1-3, low var, high c_s, high h0', 'DIESE, L1-3, high var, low c_s, high h0', 'DIESE L1-3, low var, low c_s, high h0', 'DIESE, L3-1, high var, high c_s, low h0', 'DIESE L3-1, low var, high c_s, low h0', 'DIESE, L3-1, high var, low c_s, low h0', 'DIESE L3-1, low var, low c_s, low h0', 'DIESE, L3-1, high var, high c_s, high h0', 'DIESE L3-1, low var, high c_s, high h0', 'DIESE, L3-1, high var, low c_s, high h0', 'DIESE L3-1, low var, low c_s, high h0']
+
     for name in all_names:
         run(name, False)
         print("")
