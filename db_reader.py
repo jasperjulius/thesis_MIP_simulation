@@ -5,6 +5,7 @@
 import shelve
 import pickle
 
+
 def mip(elem):
     return elem[1][0]
 
@@ -73,10 +74,15 @@ def run(name, fifo):
         print((min(db_list, key=mip)))
         print("MIN: ", round(mip(min(db_list, key=lambda x: x[1][0][0]))[0] / periods, 2))
     else:
-        print(min(db_list, key=mip), "\n", min(db_list, key=batch), "\n", min(db_list, key=fcfs))
-        print("MIN: ", round(mip(min(db_list, key=mip)) / periods, 4),
-            round(batch(min(db_list, key=batch)) / periods, 4),
-            round(fcfs(min(db_list, key=fcfs)) / periods, 4))
+        min_mip = min(db_list, key=mip)
+        min_batch = min(db_list, key=batch)
+        min_fcfs = min(db_list, key=fcfs)
+        s = str(round(mip(min_mip))/ periods) + " (" + min_mip[0] + ") & " + str(round(mip(min_mip))/ periods) + " (" + min_mip[
+            0] + ") & " + str(round(mip(min_mip))/ periods) + " (" + min_mip[0] + ") \\\\"
+        print("da mins", s)
+        print("MIN: ", round(mip(min(db_list, key=mip)) / periods, 3),
+              round(batch(min(db_list, key=batch)) / periods, 3),
+              round(fcfs(min(db_list, key=fcfs)) / periods, 3))
 
 
 def diffs_batch_mip(name):
@@ -86,10 +92,22 @@ def diffs_batch_mip(name):
             print(k, ": ", db[k])
     db.close()
 
+
 if __name__ == "__main__":
-   # with open("scenario_names.txt", "rb") as f:
+    # with open("scenario_names.txt", "rb") as f:
     #    all_names = pickle.load(f)
-    all_names = ['DIESE, L2-2, high var, high c_s, low h0', 'DIESE L2-2, low var, high c_s, low h0', 'DIESE, L2-2, high var, low c_s, low h0', 'DIESE L2-2, low var, low c_s, low h0', 'DIESE, L2-2, high var, high c_s, high h0', 'DIESE L2-2, low var, high c_s, high h0', 'DIESE, L2-2, high var, low c_s, high h0', 'DIESE L2-2, low var, low c_s, high h0', 'DIESE, L1-3, high var, high c_s, low h0', 'DIESE L1-3, low var, high c_s, low h0', 'DIESE, L1-3, high var, low c_s, low h0', 'DIESE L1-3, low var, low c_s, low h0', 'DIESE, L1-3, high var, high c_s, high h0', 'DIESE L1-3, low var, high c_s, high h0', 'DIESE, L1-3, high var, low c_s, high h0', 'DIESE L1-3, low var, low c_s, high h0', 'DIESE, L3-1, high var, high c_s, low h0', 'DIESE L3-1, low var, high c_s, low h0', 'DIESE, L3-1, high var, low c_s, low h0', 'DIESE L3-1, low var, low c_s, low h0', 'DIESE, L3-1, high var, high c_s, high h0', 'DIESE L3-1, low var, high c_s, high h0', 'DIESE, L3-1, high var, low c_s, high h0', 'DIESE L3-1, low var, low c_s, high h0']
+    all_names = ['DIESE, L2-2, high var, high c_s, low h0', 'DIESE L2-2, low var, high c_s, low h0',
+                 'DIESE, L2-2, high var, low c_s, low h0', 'DIESE L2-2, low var, low c_s, low h0',
+                 'DIESE, L2-2, high var, high c_s, high h0', 'DIESE L2-2, low var, high c_s, high h0',
+                 'DIESE, L2-2, high var, low c_s, high h0', 'DIESE L2-2, low var, low c_s, high h0',
+                 'DIESE, L1-3, high var, high c_s, low h0', 'DIESE L1-3, low var, high c_s, low h0',
+                 'DIESE, L1-3, high var, low c_s, low h0', 'DIESE L1-3, low var, low c_s, low h0',
+                 'DIESE, L1-3, high var, high c_s, high h0', 'DIESE L1-3, low var, high c_s, high h0',
+                 'DIESE, L1-3, high var, low c_s, high h0', 'DIESE L1-3, low var, low c_s, high h0',
+                 'DIESE, L3-1, high var, high c_s, low h0', 'DIESE L3-1, low var, high c_s, low h0',
+                 'DIESE, L3-1, high var, low c_s, low h0', 'DIESE L3-1, low var, low c_s, low h0',
+                 'DIESE, L3-1, high var, high c_s, high h0', 'DIESE L3-1, low var, high c_s, high h0',
+                 'DIESE, L3-1, high var, low c_s, high h0', 'DIESE L3-1, low var, low c_s, high h0']
 
     for name in all_names:
         run(name, False)
