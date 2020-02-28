@@ -54,7 +54,8 @@ def group(db_list):
 def run(name, fifo):
     db_header = shelve.open(name + " - header")
     for k in db_header.keys():
-        print(k, ": ", db_header[k])
+        if k == "name":
+            print(k, ": ", db_header[k])
     periods = db_header["periods"]
     db_header.close()
     db_data = shelve.open(name)
@@ -77,12 +78,10 @@ def run(name, fifo):
         min_mip = min(db_list, key=mip)
         min_batch = min(db_list, key=batch)
         min_fcfs = min(db_list, key=fcfs)
-        s = str(round(mip(min_mip))/ periods) + " (" + min_mip[0] + ") & " + str(round(mip(min_mip))/ periods) + " (" + min_mip[
-            0] + ") & " + str(round(mip(min_mip))/ periods) + " (" + min_mip[0] + ") \\\\"
+        s = str(round(mip(min_mip)/ periods, 3)) + " (" + min_mip[0] + ") & " + str(round(batch(min_batch)/ periods, 3)) + " (" + min_batch[
+            0] + ") & " + str(round(fcfs(min_fcfs)/ periods, 3)) + " (" + min_fcfs[0] + ") \\\\"
         print("da mins", s)
-        print("MIN: ", round(mip(min(db_list, key=mip)) / periods, 3),
-              round(batch(min(db_list, key=batch)) / periods, 3),
-              round(fcfs(min(db_list, key=fcfs)) / periods, 3))
+
 
 
 def diffs_batch_mip(name):
