@@ -3,13 +3,14 @@ import retailer as rt
 import warehouse as wh
 import numpy.random as rand
 from math import ceil
-
-
+from statistics import variance as var
+demand_at_wh = []
 # determines the order size of each retailer
 def retailer_orders(warehouse, i):
     a = []
     for r in warehouse.retailers:
         a.append(r.determine_ordered_quantity())
+    demand_at_wh.append(sum(a))
     return a
 
 # returns information about used probability distribution for demands
@@ -107,6 +108,9 @@ class Simulation:
 
     # called after run - calculates the system costs
     def collect_statistics(self):      # returns :[[H_0, H_1, H_2],[S_0, S_1, S_2],[F_0, F_1, F_2]]
+
+        global demand_at_wh
+
         rt_invs = []
         p_cost_h = []
         p_cost_s = []
@@ -120,6 +124,10 @@ class Simulation:
         total_h.append(sum(w.doc_inv) * w.c_holding)
         total_s.append(0)
         total_f.append(w.doc_setup_counter * w.c_fixed_order)
+        variance = var(demand_at_wh, 20)
+        print("len:",len(demand_at_wh))
+        print("average: ",sum(demand_at_wh)/len(demand_at_wh))
+        print("Variance: ", variance)
 
         # costs retailers
         for r in self.warehouse.retailers:
