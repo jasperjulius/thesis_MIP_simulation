@@ -26,7 +26,7 @@ def value(elem):
     return str(elem[1])
 
 
-def group(db_list):
+def group(db_list, extended=False):
     def concatenate(old, new):
         new_elems = new.split(sep=", ")
         for i in range(len(old)):
@@ -45,16 +45,20 @@ def group(db_list):
     for num, i in enumerate(dict.keys()):
         for j in range(len(dict[i])):
             dict[i][j] = sorted(dict[i][j])
+        if extended:
+            print(dict[i], "\n\t\t", i, "\n")
         if num < 30:
             pass
             # print(dict[i], "\n\t\t", i, "\n")
     return dict
 
 
-def run(name, fifo):
+def run(name, extended):
     db_header = shelve.open(name + " - header")
     for k in db_header.keys():
-        if k == "name":
+        if extended:
+            print(k, ": ", db_header[k])
+        elif k == "name":
             print(k, ": ", db_header[k])
     periods = db_header["periods"]
     db_header.close()
@@ -64,23 +68,18 @@ def run(name, fifo):
         db_list.append((k, db_data[k]))
 
     # db_list.sort(key=lambda x: x[0])
-    if fifo:
-        db_list.sort(key=mip)
-    else:
-        db_list.sort(key=mip)
+
+    db_list.sort(key=mip)
     db_data.close()
 
-    group(db_list)
-    if fifo:
-        print((min(db_list, key=mip)))
-        print("MIN: ", round(mip(min(db_list, key=lambda x: x[1][0][0]))[0] / periods, 2))
-    else:
-        min_mip = min(db_list, key=mip)
-        min_batch = min(db_list, key=batch)
-        min_fcfs = min(db_list, key=fcfs)
-        s = str(round(mip(min_mip)/ periods, 3)) + " (" + min_mip[0] + ") & " + str(round(batch(min_batch)/ periods, 3)) + " (" + min_batch[
-            0] + ") & " + str(round(fcfs(min_fcfs)/ periods, 3)) + " (" + min_fcfs[0] + ") \\\\"
-        print("da mins", s)
+    group(db_list, extended=extended)
+
+    min_mip = min(db_list, key=mip)
+    min_batch = min(db_list, key=batch)
+    min_fcfs = min(db_list, key=fcfs)
+    s = str(round(mip(min_mip)/ periods, 3)) + " (" + min_mip[0] + ") & " + str(round(batch(min_batch)/ periods, 3)) + " (" + min_batch[
+        0] + ") & " + str(round(fcfs(min_fcfs)/ periods, 3)) + " (" + min_fcfs[0] + ") \\\\"
+    print("da mins", s)
 
 
 
@@ -107,6 +106,11 @@ if __name__ == "__main__":
                  'DIESE, L3-1, high var, low c_s, low h0', 'DIESE L3-1, low var, low c_s, low h0',
                  'DIESE, L3-1, high var, high c_s, high h0', 'DIESE L3-1, low var, high c_s, high h0',
                  'DIESE, L3-1, high var, low c_s, high h0', 'DIESE L3-1, low var, low c_s, high h0']
+
+    all_names = ['ANDERE, L1-3, high var, high c_s, low h0', 'ANDERE L1-3, low var, high c_s, low h0',
+                 'ANDERE, L1-3, high var, low c_s, low h0', 'ANDERE L1-3, low var, low c_s, low h0',
+                 'ANDERE, L1-3, high var, high c_s, high h0', 'ANDERE L1-3, low var, high c_s, high h0',
+                 'ANDERE, L1-3, high var, low c_s, high h0', 'ANDERE L1-3, low var, low c_s, high h0']
 
     for name in all_names:
         run(name, False)

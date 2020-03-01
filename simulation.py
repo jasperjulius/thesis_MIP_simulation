@@ -124,10 +124,10 @@ class Simulation:
         total_h.append(sum(w.doc_inv) * w.c_holding)
         total_s.append(0)
         total_f.append(w.doc_setup_counter * w.c_fixed_order)
-        variance = var(demand_at_wh, 20)
-        print("len:",len(demand_at_wh))
-        print("average: ",sum(demand_at_wh)/len(demand_at_wh))
-        print("Variance: ", variance)
+        # variance = var(demand_at_wh, 20)
+        # print("len:",len(demand_at_wh))
+        # print("average: ",sum(demand_at_wh)/len(demand_at_wh))
+        # print("Variance: ", variance)
 
         # costs retailers
         for r in self.warehouse.retailers:
