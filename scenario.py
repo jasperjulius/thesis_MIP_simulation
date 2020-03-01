@@ -2,7 +2,7 @@
 # represents one scenario, consisting of parameter settings (high or low shortage costs, high or low variance, which lead times, ...)
 # and a generator object returning all combinations of Rs that should be tested for this scenario
 # -------------------------------------------------------------------------------
-
+import global_settings as global_settings
 class Scenario:
 
     def __init__(self, name, length, warm_up, R0, R1, R2, step0, step1, step2, repeat=1, high_var=True,
@@ -29,6 +29,8 @@ class Scenario:
         self.run_me_as = run_me_as
         self.name = name
         self.high_var = high_var
+        global_settings.high_var = self.high_var
+        global_settings.high_c_shortage = self.high_c_shortage
         self.repeat = repeat    # runs same setting multiple times - was used for testing
 
         self.R0 = R0[0]  # lower bounds

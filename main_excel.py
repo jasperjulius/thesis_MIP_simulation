@@ -9,7 +9,7 @@ import openpyxl
 import scenario as sc
 from math import trunc
 import mytimes
-import settings
+import global_settings
 import pickle
 import multiprocessing as mp
 from main_shelve import generate_demands
@@ -82,14 +82,14 @@ def run_scenario(scenario):
         sheet["D%d" % (first_row + current[3])] = str(sim.warehouse.retailers[0].seed) + "," + str(
             sim.warehouse.retailers[1].seed)
 
-        settings.full_batches = False
+        global_settings.full_batches = False
         pre1 = time.time()
         sim.run(FIFO=False)
         after1 = time.time()
         print_results_to_sheet(sim.collect_statistics(), sheet, current[3], 8)
         sim.reset()
 
-        settings.full_batches = True
+        global_settings.full_batches = True
         pre2 = time.time()
         sim.run(FIFO=False)
         after2 = time.time()

@@ -22,7 +22,6 @@ class Retailer:
         self.Q = ceil((2 * av_demand * c_fixed_order / c_holding) ** 0.5)
         self.doc_setup_counter = 0
         self.doc_pending_arrivals = self.construct_pending()
-
         self.D = 0
         self.demands = demands
 

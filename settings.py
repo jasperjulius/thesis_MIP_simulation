@@ -1,1 +1,0 @@
-full_batches = False        # used to change between batch splitting and no batch splitting decision rules

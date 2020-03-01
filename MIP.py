@@ -4,10 +4,11 @@
 # -------------------------------------------------------------------------------
 
 from gurobipy import *
-import settings
+import global_settings
 from combine_graphs import combine_2
 from combine_graphs import transfer_to_Qs
-
+from scipy.stats import nbinom
+from scipy.stats import binom
 
 class MIP:
 
@@ -52,14 +53,28 @@ class MIP:
 
     def expected_invs(self, i, lead=True):
 
-        over_est = 0    # overestimation of demand occurring per period
+
         x = []
         start = self.p_lead[i]
         if not lead:
             start = 0
         # todo: now its with +1 - what does it change?
-        for t in range(start, self.p_lead[i] * 2 + 1):  # how many periods into future? aktuell: bei L=2 => range(2,4) => 2,3
-            x.append(self.p_current_inv[i] + sum(self.p_pending_arrivals[i][:t + 1]) - (self.p_av_demand[i] + over_est) * (t + 1))
+        for t in range(start,
+                       self.p_lead[i] * 2 + 1):  # how many periods into future? aktuell: bei L=2 => range(2,4) => 2,3
+            x.append(
+                self.p_current_inv[i] + sum(self.p_pending_arrivals[i][:t + 1]) - (self.p_av_demand[i]) * (
+                        t + 1))
+
+            # overestimation - overestimates the demand, to take into account that shortage costs are way higher than holding costs using newsvendor approach
+            if global_settings.overestimation:
+                q = 0.9
+                if global_settings.high_c_shortage:
+                    q = 0.98
+                if not global_settings.high_var:
+                    x[-1] -= binom.ppf(q, 20 * (t + 1), 0.5) - (t + 1) * 10
+
+                else:
+                    x[-1] -= nbinom.ppf(q, 20 * (t + 1), 2 / 3) - (t + 1) * 10
 
         return x
 
@@ -126,7 +141,7 @@ class MIP:
 
             g1 = self.holding_objective(i)
             g2 = self.shortage_objective(i)
-            if settings.full_batches:
+            if global_settings.full_batches:
                 g1 = transfer_to_Qs(g1, self.q[i])
                 g2 = transfer_to_Qs(g2, self.q[i])
 
@@ -138,19 +153,21 @@ class MIP:
             self.model.setPWLObj(X_var[i], list_x, list_y)
             Y_fixed[i].Obj = self.p_c_fixed_order[i]
 
-        if settings.full_batches:
-            self.model.addConstr(quicksum(X_var[i] * self.q[i] for i in X_var) <= self.p_stock_warehouse)  # ct max capacity at warehouse
+        if global_settings.full_batches:
+            self.model.addConstr(
+                quicksum(X_var[i] * self.q[i] for i in X_var) <= self.p_stock_warehouse)  # ct max capacity at warehouse
             self.model.addConstrs(X_var[i] * self.q[i] <= self.max_orders[i] for i in X_var)
 
         else:
-            self.model.addConstr(quicksum(X_var[i] for i in X_var) <= self.p_stock_warehouse)  # ct max capacity at warehouse
+            self.model.addConstr(
+                quicksum(X_var[i] for i in X_var) <= self.p_stock_warehouse)  # ct max capacity at warehouse
             self.model.addConstrs(X_var[i] <= self.max_orders[i] for i in X_var)
 
         self.model.addConstrs(X_var[i] <= Y_fixed[i] * self.p_stock_warehouse for i in X_var)
         self.model.optimize()
 
         final = [int(X_var.get(i).X) for i in range(num_i)]
-        if settings.full_batches:
+        if global_settings.full_batches:
             final = [int(X_var.get(i).X) * self.q[i] for i in range(num_i)]
 
         return final

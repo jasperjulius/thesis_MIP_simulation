@@ -12,7 +12,7 @@ sys.path.append(gurobipath)
 import time
 import simulation
 import scenario as sc
-import settings
+import global_settings
 import shelve
 import multiprocessing as mp
 from simulation import binomial
@@ -87,13 +87,13 @@ def execute_single_run(current):
     sim.warehouse.retailers[1].R = current[2]
 
     # mip
-    settings.full_batches = False
+    global_settings.full_batches = False
     sim.run(FIFO=False)
     value_mip = create_stats(sim.collect_statistics())
     sim.reset()
 
     # mip - no batch splitting
-    settings.full_batches = True
+    global_settings.full_batches = True
     sim.run(FIFO=False)
     value_batch = create_stats(sim.collect_statistics())
     sim.reset()
@@ -297,10 +297,11 @@ if __name__ == '__main__':
         # pickle.dump(all_names, f)
     i = 0
     start_time = time.time()
+    del scenarios[0]    #todo: löschen
     for scenario in scenarios:
         print("beginning scenario", i, " - hours since start:", (time.time()-start_time)/3600, ", scen:", scenario.name, ", range:", scenario.getRanges())
         before = time.time()
-        run_scenario_parallel(scenario)  # change to "run_scenario_sequential(scenario)" when running on MacOS
+        run_scenario_sequential(scenario)  # change to "run_scenario_sequential(scenario)" when running on MacOS
         after = time.time()
         db = shelve.open(scenario.name + " - header")
         observed_average = [round(sum(i) / len(i), 4) for i in scenario.demands]
