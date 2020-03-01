@@ -57,8 +57,8 @@ class MIP:
         start = self.p_lead[i]
         if not lead:
             start = 0
-
-        for t in range(start, self.p_lead[i] * 2):  # how many periods into future? aktuell: bei L=2 => range(2,4) => 2,3
+        # todo: now its with +1 - what does it change?
+        for t in range(start, self.p_lead[i] * 2 + 1):  # how many periods into future? aktuell: bei L=2 => range(2,4) => 2,3
             x.append(self.p_current_inv[i] + sum(self.p_pending_arrivals[i][:t + 1]) - (self.p_av_demand[i] + over_est) * (t + 1))
 
         return x
