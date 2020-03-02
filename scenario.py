@@ -3,14 +3,45 @@
 # and a generator object returning all combinations of Rs that should be tested for this scenario
 # -------------------------------------------------------------------------------
 import global_settings as global_settings
+import pickle
+from simulation import binomial
+from simulation import neg_binomial
+
+
+def name_gen(name, L0, Li, var, c_s, h0):
+    temp = name + " L" + str(L0) + "-" + str(Li)+ ", "
+    if var:
+        temp += "high var, "
+    else:
+        temp += "low var, "
+    if c_s:
+        temp += "high c_s, "
+    else:
+        temp += "low c_s, "
+    if h0 == 0.1:
+        temp += "high h0"
+    elif h0 == 0.05:
+        temp += "low h0"
+    else:
+        raise Exception("h0 neither 0.1 nor 0.05")
+    return temp
+
+
 class Scenario:
 
-    def __init__(self, name, length, warm_up, R0, R1, R2, step0, step1, step2, repeat=1, high_var=True,
-                 high_c_shortage=True, run_me_as=2, demands=None, distribution=None, settings={}):
+    def __init__(self, name, length=50000, warm_up=100, step0=15, step1=1, step2=1, repeat=1, high_var=True,
+                 high_c_shortage=True, run_me_as=2, settings={}):
+
         self.length = length
         self.warm_up = warm_up
-        self.demands = demands  # multiple lists (one for each retailer) of random demands
-        self.distribution = distribution    # info about the underlying distribution
+        if high_var:
+            with open("demands_high.txt", "rb") as f:
+                self.demands = pickle.load(f)
+            self.distribution = neg_binomial(20, 2/3)
+        else:
+            with open("demands_low.txt", "rb") as f:
+                self.demands = pickle.load(f)
+            self.distribution = binomial(20, 0.5)
 
         self.h0 = 0.1
         self.L0 = 2
@@ -25,9 +56,22 @@ class Scenario:
                 self.Li = settings[key]
             if key == "high_c_shortage":
                 self.high_c_shortage = settings[key]
+        if self.Li == 2:
+            high = (0, 105), (20, 74), (20, 74)
+            low = (0, 105), (20, 64), (20, 64)
+        elif self.Li == 1:
+            high = (0, 135), (10, 74), (10, 74)
+            low = (0, 135), (10, 64), (10, 64)
+        elif self.Li == 3:
+            high = (0, 75), (30, 74), (30, 74)
+            low = (0, 75), (30, 64), (30, 64)
+        if high_var:
+            R0, R1, R2 = high
+        else:
+            R0, R1, R2 = low
 
         self.run_me_as = run_me_as
-        self.name = name
+        self.name = name_gen(name, self.L0, self.Li, high_var, self.high_c_shortage, self.h0)
         self.high_var = high_var
         global_settings.high_var = self.high_var
         global_settings.high_c_shortage = self.high_c_shortage

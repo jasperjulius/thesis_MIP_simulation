@@ -25,9 +25,7 @@ def binomial(n, p):
     var = n * p * (1 - p)
     return ["bin: ", n, p, mu, var]
 
-
 class Simulation:
-
     def __init__(self, num_retailers=2, length=100, warm_up=None, stock=100, high_var=True, high_c_shortage=True, demands=None, distribution=None, L0=2, h0=0.1, Li=2):
         self.length = length
         self.warehouse = wh.Warehouse(stock=stock, lead=L0, c_holding=h0)

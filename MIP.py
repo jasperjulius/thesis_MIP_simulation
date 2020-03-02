@@ -10,6 +10,7 @@ from combine_graphs import transfer_to_Qs
 from scipy.stats import nbinom
 from scipy.stats import binom
 
+
 class MIP:
 
     def __init__(self):
@@ -53,29 +54,23 @@ class MIP:
 
     def expected_invs(self, i, lead=True):
 
-
         x = []
         start = self.p_lead[i]
         if not lead:
             start = 0
-        # todo: now its with +1 - what does it change?
         for t in range(start,
-                       self.p_lead[i] * 2 + 1):  # how many periods into future? aktuell: bei L=2 => range(2,4) => 2,3
+                       self.p_lead[i] * 2):  # how many periods into future? aktuell: bei L=2 => range(2,4) => 2,3
             x.append(
                 self.p_current_inv[i] + sum(self.p_pending_arrivals[i][:t + 1]) - (self.p_av_demand[i]) * (
                         t + 1))
 
             # overestimation - overestimates the demand, to take into account that shortage costs are way higher than holding costs using newsvendor approach
             if global_settings.overestimation:
-                q = 0.9
-                if global_settings.high_c_shortage:
-                    q = 0.98
+                q = self.p_c_shortage[i] / (self.p_c_shortage[i] + self.p_c_holding[i])
                 if not global_settings.high_var:
-                    x[-1] -= binom.ppf(q, 20 * (t + 1), 0.5) - (t + 1) * 10
-
+                    x[-1] -= int(binom.ppf(q, 20 * (t + 1), 0.5) - (t + 1) * 10)
                 else:
-                    x[-1] -= nbinom.ppf(q, 20 * (t + 1), 2 / 3) - (t + 1) * 10
-
+                    x[-1] -= int(nbinom.ppf(q, 20 * (t + 1), 2 / 3) - (t + 1) * 10)
         return x
 
     # creates piecewise linear function for holding costs of one retailer
