@@ -29,7 +29,7 @@ def name_gen(name, L0, Li, var, c_s, h0):
 
 class Scenario:
 
-    def __init__(self, name, length=50000, warm_up=100, step0=15, step1=1, step2=1, repeat=1, high_var=True,
+    def __init__(self, name, length=50000, warm_up=100, r0=None, step0=15, step1=1, step2=1, repeat=1, high_var=True,
                  high_c_shortage=True, run_me_as=2, settings={}):
 
         self.length = length
@@ -65,11 +65,14 @@ class Scenario:
         elif self.Li == 3:
             high = (0, 75), (30, 74), (30, 74)
             low = (0, 75), (30, 64), (30, 64)
+        else:
+            raise Exception("scenario: Li was neither 1, 2, or 3 - no borders can be defined - Li:", self.Li)
         if high_var:
             R0, R1, R2 = high
         else:
             R0, R1, R2 = low
-
+        if r0 is not None:
+            R0 = r0
         self.run_me_as = run_me_as
         self.name = name_gen(name, self.L0, self.Li, high_var, self.high_c_shortage, self.h0)
         self.high_var = high_var

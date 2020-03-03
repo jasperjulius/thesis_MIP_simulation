@@ -77,11 +77,19 @@ def run(name, extended):
     min_mip = min(db_list, key=mip)
     min_batch = min(db_list, key=batch)
     min_fcfs = min(db_list, key=fcfs)
-    s = str(round(mip(min_mip)/ periods, 3)) + " (" + min_mip[0] + ") & " + str(round(batch(min_batch)/ periods, 3)) + " (" + min_batch[
-        0] + ") & " + str(round(fcfs(min_fcfs)/ periods, 3)) + " (" + min_fcfs[0] + ") \\\\"
+    s = str(round(mip(min_mip)/ periods, 2)) + " (" + min_mip[0] + ") & " + str(round(batch(min_batch)/ periods, 2)) + " (" + min_batch[
+        0] + ") & " + str(round(fcfs(min_fcfs)/ periods, 2)) + " (" + min_fcfs[0] + ") \\\\"
     print("da mins", s)
 
 
+def no_header_just_data(name):
+    db_data = shelve.open(name)
+    db_list = []
+    for k in db_data.keys():
+        db_list.append((k, db_data[k]))
+    for i in db_list:
+        print(i)
+    db_data.close()
 
 def diffs_batch_mip(name):
     db = shelve.open(name)
@@ -107,10 +115,35 @@ if __name__ == "__main__":
                  'DIESE, L3-1, high var, high c_s, high h0', 'DIESE L3-1, low var, high c_s, high h0',
                  'DIESE, L3-1, high var, low c_s, high h0', 'DIESE L3-1, low var, low c_s, high h0']
 
-    all_names = ['ANDERE, L1-3, high var, high c_s, low h0', 'ANDERE L1-3, low var, high c_s, low h0',
-                 'ANDERE, L1-3, high var, low c_s, low h0', 'ANDERE L1-3, low var, low c_s, low h0',
-                 'ANDERE, L1-3, high var, high c_s, high h0', 'ANDERE L1-3, low var, high c_s, high h0',
-                 'ANDERE, L1-3, high var, low c_s, high h0', 'ANDERE L1-3, low var, low c_s, high h0']
+    all_names = [
+                 'DIESE L2-2, low var, low c_s, low h0',
+                 'DIESE L2-2, low var, low c_s, high h0',
+                 'DIESE L2-2, low var, high c_s, low h0',
+                 'DIESE L2-2, low var, high c_s, high h0',
+                 'DIESE, L2-2, high var, low c_s, low h0',
+                 'DIESE, L2-2, high var, low c_s, high h0',
+                 'DIESE, L2-2, high var, high c_s, low h0',
+                 'DIESE, L2-2, high var, high c_s, high h0',
+
+                 'DIESE L1-3, low var, low c_s, low h0',
+                 'DIESE L1-3, low var, low c_s, high h0',
+                 'DIESE L1-3, low var, high c_s, low h0',
+                 'DIESE L1-3, low var, high c_s, high h0',
+                 'DIESE, L1-3, high var, low c_s, low h0',
+                 'DIESE, L1-3, high var, low c_s, high h0',
+                 'DIESE, L1-3, high var, high c_s, low h0',
+                 'DIESE, L1-3, high var, high c_s, high h0',
+
+                 'DIESE L3-1, low var, low c_s, low h0',
+                 'DIESE L3-1, low var, low c_s, high h0',
+                 'DIESE L3-1, low var, high c_s, low h0',
+                 'DIESE L3-1, low var, high c_s, high h0',
+                 'DIESE, L3-1, high var, low c_s, low h0',
+                 'DIESE, L3-1, high var, low c_s, high h0',
+                 'DIESE, L3-1, high var, high c_s, low h0',
+                 'DIESE, L3-1, high var, high c_s, high h0']
+
+    # all_names = ['DIESE, L2-2, high var, high c_s, low h0','ANDERE, L2-2, high var, high c_s, low h0',  'over est, L2-2, high var, high c_s, low h0']
 
     for name in all_names:
         run(name, False)

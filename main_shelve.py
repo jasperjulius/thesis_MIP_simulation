@@ -158,7 +158,6 @@ if __name__ == '__main__':
     scenarios.append(sc.Scenario("over est,", high_var=True, settings=settings4))
     scenarios.append(sc.Scenario("over est", high_var=False, settings=settings4))
 
-
     # block: (L0, Li) = (1,3)
     settings4 = {"L0": 1, "Li": 3, "high_c_shortage": True, "h0": 0.05}
     scenarios.append(sc.Scenario("over est,", high_var=True, settings=settings4))
@@ -176,7 +175,7 @@ if __name__ == '__main__':
     scenarios.append(sc.Scenario("over est,", high_var=True, settings=settings7))
     scenarios.append(sc.Scenario("over est", high_var=False, settings=settings7))
 
-
+    scenarios = []
     # block: (L0, Li) = (3,1)
     settings8 = {"L0": 3, "Li": 1, "high_c_shortage": True, "h0": 0.05}
     scenarios.append(sc.Scenario("over est,", high_var=True, settings=settings8))
@@ -207,7 +206,7 @@ if __name__ == '__main__':
         print("beginning scenario", i, " - hours since start:", round((time.time() - start_time) / 3600, 2), ", scen:",
               scenario.name, ", range:", scenario.getRanges())
         before = time.time()
-        run_scenario_sequential(scenario)  # change to "run_scenario_sequential(scenario)" when running on MacOS
+        run_scenario_parallel(scenario)  # change to "run_scenario_sequential(scenario)" when running on MacOS
         after = time.time()
         db = shelve.open(scenario.name + " - header")
         observed_average = [round(sum(i) / len(i), 4) for i in scenario.demands]
