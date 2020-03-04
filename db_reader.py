@@ -45,11 +45,9 @@ def group(db_list, extended=False):
     for num, i in enumerate(dict.keys()):
         for j in range(len(dict[i])):
             dict[i][j] = sorted(dict[i][j])
-        if extended:
+        if extended and num < 30:
             print(dict[i], "\n\t\t", i, "\n")
-        if num < 30:
-            pass
-            # print(dict[i], "\n\t\t", i, "\n")
+
     return dict
 
 
@@ -85,21 +83,15 @@ def run(name, extended):
 def no_header_just_data(name):
     db_data = shelve.open(name)
     db_list = []
+    count = 0
     for k in db_data.keys():
         db_list.append((k, db_data[k]))
+        count += 1
     db_list.sort(key=lambda x: x[0])
     for i in db_list:
         print(i)
+    print("TOTAL:", count)
     db_data.close()
-
-
-def diffs_batch_mip(name):
-    db = shelve.open(name)
-    for k in db.keys():
-        if not db[k][1] == db[k][2]:
-            print(k, ": ", db[k])
-    db.close()
-
 
 def count(name):
     db_data = shelve.open(name)
@@ -109,7 +101,15 @@ def count(name):
         if "(15" in k:
             print("contains negative")
             count -=1
+
     print(name, "count:", count)
+
+def diffs_batch_mip(name):
+    db = shelve.open(name)
+    for k in db.keys():
+        if not db[k][1] == db[k][2]:
+            print(k, ": ", db[k])
+    db.close()
 
 def check_groups(name):
     print(name)
@@ -209,9 +209,7 @@ if __name__ == "__main__":
                  'over est, L3-1, high var, high c_s, high h0']
 
     for name in all_names:
-        # print(os.getcwd())
-        # count(os.getcwd()+"\\results VM\\"+name)
-        #  run(os.getcwd()+"\\results VM\\"+name, False)
         run(name, False)
-        # run(os.getcwd()+"\\results VM\\"+name, False)
+        print("")
+        print("")
         print("")
