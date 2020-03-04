@@ -143,6 +143,7 @@ def reduce_rows(list_r):
             reduced_list.append((list_r[first], list_r[first] + count))
             first = first + count + 1
             count = 0
+    return reduced_list
 
 if __name__ == "__main__":
     # with open("scenario_names.txt", "rb") as f:
@@ -188,10 +189,29 @@ if __name__ == "__main__":
                  'DIESE, L3-1, high var, high c_s, low h0',
                  'DIESE, L3-1, high var, high c_s, high h0']
 
-    all_names = ['over est, L1-3, high var, low c_s, high h0']
+    all_names = [
+                 'over est L2-2, low var, low c_s, low h0',
+                 'over est L2-2, low var, low c_s, high h0',
+                 'over est L2-2, low var, high c_s, low h0',
+                 'over est L2-2, low var, high c_s, high h0',
+                 'over est, L2-2, high var, low c_s, low h0',
+                 'over est, L2-2, high var, low c_s, high h0',
+                 'over est, L2-2, high var, high c_s, low h0',
+                 'over est, L2-2, high var, high c_s, high h0',
+
+                 'over est L3-1, low var, low c_s, low h0',
+                 'over est L3-1, low var, low c_s, high h0',
+                 'over est L3-1, low var, high c_s, low h0',
+                 'over est L3-1, low var, high c_s, high h0',
+                 'over est, L3-1, high var, low c_s, low h0',
+                 'over est, L3-1, high var, low c_s, high h0',
+                 'over est, L3-1, high var, high c_s, low h0',
+                 'over est, L3-1, high var, high c_s, high h0']
 
     for name in all_names:
-        print(os.getcwd())
+        # print(os.getcwd())
         # count(os.getcwd()+"\\results VM\\"+name)
-        count(os.getcwd()+"\\"+name)
+        #  run(os.getcwd()+"\\results VM\\"+name, False)
+        run(name, False)
+        # run(os.getcwd()+"\\results VM\\"+name, False)
         print("")

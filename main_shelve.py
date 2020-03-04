@@ -21,8 +21,10 @@ from numpy import random as rand
 from statistics import variance
 import db_reader as reader
 import pickle
+import os
 
 parallel = False
+db_path = os.getcwd() + "\\results VM\\"
 
 
 def create_stats(stats):
@@ -192,9 +194,11 @@ if __name__ == '__main__':
     scenarios.append(sc.Scenario("over est,", high_var=True, settings=settings6))
     scenarios.append(sc.Scenario("over est", high_var=False, settings=settings6))
 
+    scenarios = []
     settings7 = {"L0": 1, "Li": 3, "high_c_shortage": False, "h0": 0.1}
     scenarios.append(sc.Scenario("over est,", high_var=True, settings=settings7))
     scenarios.append(sc.Scenario("over est", high_var=False, settings=settings7))
+
 
     all_names = []
     for s in scenarios:
