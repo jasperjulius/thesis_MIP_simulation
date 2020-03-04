@@ -4,7 +4,7 @@
 
 import shelve
 import pickle
-
+import os
 
 def mip(elem):
     return elem[1][0]
@@ -87,9 +87,11 @@ def no_header_just_data(name):
     db_list = []
     for k in db_data.keys():
         db_list.append((k, db_data[k]))
+    db_list.sort(key=lambda x: x[0])
     for i in db_list:
         print(i)
     db_data.close()
+
 
 def diffs_batch_mip(name):
     db = shelve.open(name)
@@ -98,6 +100,49 @@ def diffs_batch_mip(name):
             print(k, ": ", db[k])
     db.close()
 
+
+def count(name):
+    db_data = shelve.open(name)
+    count = 0
+    for k in db_data.keys():
+        count+=1
+        if "(15" in k:
+            print("contains negative")
+            count -=1
+    print(name, "count:", count)
+
+def check_groups(name):
+    print(name)
+    dict_r = {}
+    with shelve.open(name) as db:
+        for k in db.keys():
+            setting = k.split(", ")
+            if not setting[0] in dict_r:
+                dict_r[setting[0]] = []
+            dict_r[setting[0]].append(int(setting[1]))
+    list_keys = list(dict_r.keys())
+    list_keys.sort(key=lambda x: int(x))
+    for k in list_keys:
+        dict_r[k].sort()
+        dict_r[k] = reduce_rows(dict_r[k])
+        print(k, dict_r[k])
+    return dict_r
+
+def reduce_rows(list_r):
+    reduced_list = []
+    first = 0
+    count = 0
+    while True:
+        if count + first + 1 >= len(list_r):
+            reduced_list.append((list_r[first], list_r[first] + count))
+            break
+
+        if list_r[first + count + 1] == list_r[first] + (count + 1):
+            count += 1
+        else:
+            reduced_list.append((list_r[first], list_r[first] + count))
+            first = first + count + 1
+            count = 0
 
 if __name__ == "__main__":
     # with open("scenario_names.txt", "rb") as f:
@@ -143,10 +188,10 @@ if __name__ == "__main__":
                  'DIESE, L3-1, high var, high c_s, low h0',
                  'DIESE, L3-1, high var, high c_s, high h0']
 
-    # all_names = ['DIESE, L2-2, high var, high c_s, low h0','ANDERE, L2-2, high var, high c_s, low h0',  'over est, L2-2, high var, high c_s, low h0']
+    all_names = ['over est, L1-3, high var, low c_s, high h0']
 
     for name in all_names:
-        run(name, False)
-        print("")
-        print("")
+        print(os.getcwd())
+        # count(os.getcwd()+"\\results VM\\"+name)
+        count(os.getcwd()+"\\"+name)
         print("")

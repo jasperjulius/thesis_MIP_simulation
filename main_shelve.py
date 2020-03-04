@@ -158,6 +158,27 @@ if __name__ == '__main__':
     scenarios.append(sc.Scenario("over est,", high_var=True, settings=settings4))
     scenarios.append(sc.Scenario("over est", high_var=False, settings=settings4))
 
+
+
+    scenarios = []
+    # block: (L0, Li) = (3,1)
+    settings8 = {"L0": 3, "Li": 1, "high_c_shortage": True, "h0": 0.05}
+    scenarios.append(sc.Scenario("over est,", high_var=True, settings=settings8))
+    scenarios.append(sc.Scenario("over est", high_var=False, settings=settings8))
+
+    settings9 = {"L0": 3, "Li": 1, "high_c_shortage": False, "h0": 0.05}
+    scenarios.append(sc.Scenario("over est,", high_var=True, settings=settings9))
+    scenarios.append(sc.Scenario("over est", high_var=False, settings=settings9))
+
+    settings10 = {"L0": 3, "Li": 1, "high_c_shortage": True, "h0": 0.1}
+    scenarios.append(sc.Scenario("over est,", high_var=True, settings=settings10))
+    scenarios.append(sc.Scenario("over est", high_var=False, settings=settings10))
+    scenarios = []
+    settings11 = {"L0": 3, "Li": 1, "high_c_shortage": False, "h0": 0.1}
+    scenarios.append(sc.Scenario("over est,", high_var=True, settings=settings11, r0=(30, 45)))
+    scenarios.append(sc.Scenario("over est", high_var=False, settings=settings11))
+
+
     # block: (L0, Li) = (1,3)
     settings4 = {"L0": 1, "Li": 3, "high_c_shortage": True, "h0": 0.05}
     scenarios.append(sc.Scenario("over est,", high_var=True, settings=settings4))
@@ -174,25 +195,6 @@ if __name__ == '__main__':
     settings7 = {"L0": 1, "Li": 3, "high_c_shortage": False, "h0": 0.1}
     scenarios.append(sc.Scenario("over est,", high_var=True, settings=settings7))
     scenarios.append(sc.Scenario("over est", high_var=False, settings=settings7))
-
-    scenarios = []
-    # block: (L0, Li) = (3,1)
-    settings8 = {"L0": 3, "Li": 1, "high_c_shortage": True, "h0": 0.05}
-    scenarios.append(sc.Scenario("over est,", high_var=True, settings=settings8))
-    scenarios.append(sc.Scenario("over est", high_var=False, settings=settings8))
-
-    settings9 = {"L0": 3, "Li": 1, "high_c_shortage": False, "h0": 0.05}
-    scenarios.append(sc.Scenario("over est,", high_var=True, settings=settings9))
-    scenarios.append(sc.Scenario("over est", high_var=False, settings=settings9))
-
-    settings10 = {"L0": 3, "Li": 1, "high_c_shortage": True, "h0": 0.1}
-    scenarios.append(sc.Scenario("over est,", high_var=True, settings=settings10))
-    scenarios.append(sc.Scenario("over est", high_var=False, settings=settings10))
-
-    settings11 = {"L0": 3, "Li": 1, "high_c_shortage": False, "h0": 0.1}
-    scenarios.append(sc.Scenario("over est,", high_var=True, settings=settings11))
-    scenarios.append(sc.Scenario("over est", high_var=False, settings=settings11))
-
 
     all_names = []
     for s in scenarios:
