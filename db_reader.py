@@ -45,15 +45,12 @@ def group(db_list, extended=False):
     for num, i in enumerate(dict.keys()):
         for j in range(len(dict[i])):
             dict[i][j] = sorted(dict[i][j])
-        if extended:
+        if extended and num < 30:
             print(dict[i], "\n\t\t", i, "\n")
-        if num < 30:
-            pass
-            # print(dict[i], "\n\t\t", i, "\n")
+
     return dict
 
-
-def run(name, extended):
+def run(name, extended=False):
     db_header = shelve.open(name + " - header")
     for k in db_header.keys():
         if extended:
@@ -77,19 +74,34 @@ def run(name, extended):
     min_mip = min(db_list, key=mip)
     min_batch = min(db_list, key=batch)
     min_fcfs = min(db_list, key=fcfs)
-    s = str(round(mip(min_mip)/ periods, 2)) + " (" + min_mip[0] + ") & " + str(round(batch(min_batch)/ periods, 2)) + " (" + min_batch[
-        0] + ") & " + str(round(fcfs(min_fcfs)/ periods, 2)) + " (" + min_fcfs[0] + ") \\\\"
+    s = str(round(mip(min_mip) / periods, 2)) + " (" + min_mip[0] + ") & " + str(
+        round(batch(min_batch) / periods, 2)) + " (" + min_batch[
+            0] + ") & " + str(round(fcfs(min_fcfs) / periods, 2)) + " (" + min_fcfs[0] + ") \\\\"
     print("da mins", s)
 
 
 def no_header_just_data(name):
     db_data = shelve.open(name)
     db_list = []
+    count = 0
     for k in db_data.keys():
         db_list.append((k, db_data[k]))
+        count += 1
     for i in db_list:
         print(i)
+    print("TOTAL:", count)
     db_data.close()
+
+def count(name):
+    db_data = shelve.open(name)
+    count = 0
+    for k in db_data.keys():
+        count+=1
+        if "(15" in k:
+            print("contains negative")
+            count -=1
+
+    print(name, "count:", count)
 
 def diffs_batch_mip(name):
     db = shelve.open(name)
@@ -98,6 +110,41 @@ def diffs_batch_mip(name):
             print(k, ": ", db[k])
     db.close()
 
+def check_groups(name):
+    print(name)
+    dict_r = {}
+    with shelve.open(name) as db:
+        for k in db.keys():
+            setting = k.split(", ")
+            if not setting[0] in dict_r:
+                dict_r[setting[0]] = []
+            dict_r[setting[0]].append(int(setting[1]))
+    list_keys = list(dict_r.keys())
+    list_keys.sort(key=lambda x: int(x))
+    for k in list_keys:
+        dict_r[k].sort()
+        dict_r[k] = reduce_rows(dict_r[k])
+        print(k, dict_r[k])
+    return dict_r
+
+def reduce_rows(list_r):
+    reduced_list = []
+    first = 0
+    count = 0
+    while True:
+        if count + first + 1 >= len(list_r):
+            reduced_list.append((list_r[first], list_r[first] + count))
+            break
+
+        if list_r[first + count + 1] == list_r[first] + (count + 1):
+            count += 1
+        else:
+            reduced_list.append((list_r[first], list_r[first] + count))
+            first = first + count + 1
+            count = 0
+
+
+    return reduced_list
 
 if __name__ == "__main__":
     # with open("scenario_names.txt", "rb") as f:
@@ -116,37 +163,34 @@ if __name__ == "__main__":
                  'DIESE, L3-1, high var, low c_s, high h0', 'DIESE L3-1, low var, low c_s, high h0']
 
     all_names = [
-                 'DIESE L2-2, low var, low c_s, low h0',
-                 'DIESE L2-2, low var, low c_s, high h0',
-                 'DIESE L2-2, low var, high c_s, low h0',
-                 'DIESE L2-2, low var, high c_s, high h0',
-                 'DIESE, L2-2, high var, low c_s, low h0',
-                 'DIESE, L2-2, high var, low c_s, high h0',
-                 'DIESE, L2-2, high var, high c_s, low h0',
-                 'DIESE, L2-2, high var, high c_s, high h0',
+        'DIESE L2-2, low var, low c_s, low h0',
+        'DIESE L2-2, low var, low c_s, high h0',
+        'DIESE L2-2, low var, high c_s, low h0',
+        'DIESE L2-2, low var, high c_s, high h0',
+        'DIESE, L2-2, high var, low c_s, low h0',
+        'DIESE, L2-2, high var, low c_s, high h0',
+        'DIESE, L2-2, high var, high c_s, low h0',
+        'DIESE, L2-2, high var, high c_s, high h0',
 
-                 'DIESE L1-3, low var, low c_s, low h0',
-                 'DIESE L1-3, low var, low c_s, high h0',
-                 'DIESE L1-3, low var, high c_s, low h0',
-                 'DIESE L1-3, low var, high c_s, high h0',
-                 'DIESE, L1-3, high var, low c_s, low h0',
-                 'DIESE, L1-3, high var, low c_s, high h0',
-                 'DIESE, L1-3, high var, high c_s, low h0',
-                 'DIESE, L1-3, high var, high c_s, high h0',
+        'DIESE L1-3, low var, low c_s, low h0',
+        'DIESE L1-3, low var, low c_s, high h0',
+        'DIESE L1-3, low var, high c_s, low h0',
+        'DIESE L1-3, low var, high c_s, high h0',
+        'DIESE, L1-3, high var, low c_s, low h0',
+        'DIESE, L1-3, high var, low c_s, high h0',
+        'DIESE, L1-3, high var, high c_s, low h0',
+        'DIESE, L1-3, high var, high c_s, high h0',
 
-                 'DIESE L3-1, low var, low c_s, low h0',
-                 'DIESE L3-1, low var, low c_s, high h0',
-                 'DIESE L3-1, low var, high c_s, low h0',
-                 'DIESE L3-1, low var, high c_s, high h0',
-                 'DIESE, L3-1, high var, low c_s, low h0',
-                 'DIESE, L3-1, high var, low c_s, high h0',
-                 'DIESE, L3-1, high var, high c_s, low h0',
-                 'DIESE, L3-1, high var, high c_s, high h0']
+        'DIESE L3-1, low var, low c_s, low h0',
+        'DIESE L3-1, low var, low c_s, high h0',
+        'DIESE L3-1, low var, high c_s, low h0',
+        'DIESE L3-1, low var, high c_s, high h0',
+        'DIESE, L3-1, high var, low c_s, low h0',
+        'DIESE, L3-1, high var, low c_s, high h0',
+        'DIESE, L3-1, high var, high c_s, low h0',
+        'DIESE, L3-1, high var, high c_s, high h0']
 
-    # all_names = ['DIESE, L2-2, high var, high c_s, low h0','ANDERE, L2-2, high var, high c_s, low h0',  'over est, L2-2, high var, high c_s, low h0']
 
     for name in all_names:
-        run(name, False)
-        print("")
-        print("")
+        check_groups("results vm/" + name)
         print("")
